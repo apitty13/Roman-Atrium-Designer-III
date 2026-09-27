@@ -1,0 +1,2657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roman Atrium House Designer — Spreadsheet Layout</title>
+<style>
+  :root{
+    --paper:#f3efe6;
+    --ink:#252525;
+    --accent:#9b2d30;
+    --water:#2f8fce;
+    --panel:#fffdf8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+  }
+  header{
+    padding:14px 22px 8px;
+    background:var(--ink);
+    color:white;
+  }
+  header h1{margin:0;font-size:clamp(22px,3vw,34px)}
+  header p{margin:0;opacity:.88}
+  .app{
+    display:grid;
+    grid-template-columns:290px minmax(0,1fr);
+    min-height:calc(100vh - 91px);
+  }
+  aside{
+    padding:16px;
+    background:#e7e0d3;
+    border-right:1px solid #c8beae;
+    overflow:auto;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid #d5ccbe;
+    border-radius:12px;
+    padding:13px;
+    margin-bottom:12px;
+    box-shadow:0 2px 7px rgba(0,0,0,.05);
+  }
+  /* Keep the complete sidebar controls in one shared scroll area. */
+  .sidebar-scroll{
+    overflow-y:auto;
+    max-height:calc(100vh - 125px);
+    scrollbar-gutter:stable;
+    padding-right:4px;
+  }
+  .sidebar-scroll .panel{margin-bottom:12px;}
+  .panel h2{font-size:15px;margin:0 0 9px}
+  .hint{font-size:13px;line-height:1.4;color:#57524b}
+  .marble-choice.active{background:#e6e1d7;border-color:#7d766c;font-weight:700}
+  .tools{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+  button{
+    border:1px solid #bdb3a4;
+    border-radius:8px;
+    padding:9px 8px;
+    background:white;
+    cursor:pointer;
+    font:inherit;
+  }
+  button:hover{background:#f2eee7}
+  button.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:white;
+  }
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .labels{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+  }
+  .label{
+    padding:8px 10px;
+    border:1px solid #bdb3a4;
+    border-radius:8px;
+    background:#fff;
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+    font-weight:600;
+    font-size:14px;
+  }
+  .label:active{cursor:grabbing}
+  .label:hover{background:#f7f2e8;border-color:#9b2d30;}
+  .label-tooltip{position:fixed;z-index:20;display:none;max-width:300px;padding:8px 10px;background:#252525;color:#fff;border-radius:7px;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 3px 12px rgba(0,0,0,.25);}
+  .legend{display:grid;gap:7px;font-size:13px}
+  .legend span{display:flex;align-items:center;gap:8px}
+  /* Legend symbols intentionally mirror the shapes/colors used by the canvas layout. */
+  .swatch{width:24px;height:18px;display:inline-block;position:relative;flex:0 0 24px;box-sizing:border-box}
+  .swatch.wall{height:8px;margin:5px 0;background:#9b2d30;border:0;border-radius:1px}
+  .swatch.water{background:rgba(47,143,206,.68);border:1px solid rgba(47,143,206,.95);border-radius:2px}
+  .swatch.water::before{content:"";position:absolute;left:4px;right:4px;top:4px;height:2px;background:rgba(255,255,255,.55);border-radius:2px}
+  .swatch.grass{border:0;background:rgba(111,174,75,.18);border-radius:2px}
+  .swatch.grass::before,.swatch.grass::after{content:"";position:absolute;bottom:3px;width:2px;height:11px;background:#448036;border-radius:2px;transform-origin:bottom}
+  .swatch.grass::before{left:8px;transform:rotate(-24deg);box-shadow:5px -1px 0 #448036,10px 1px 0 #448036}
+  .swatch.grass::after{left:15px;transform:rotate(24deg);height:9px}
+  .swatch.statue{border:1px solid #4d473f;background:#e2d8c9;border-radius:50% 50% 35% 35%;width:16px;height:16px;margin-left:4px}
+  .swatch.statue::before{content:"";position:absolute;left:4px;right:4px;bottom:-3px;height:4px;background:#b9afa0;border:1px solid #4d473f}
+  .swatch.couch{width:24px;height:15px;margin-top:1px;background:#b94e4a;border:2px solid #443127;border-radius:5px;box-shadow:inset 0 0 0 3px rgba(138,91,61,.65)}
+  .swatch.table{width:18px;height:18px;margin-left:3px;background:#d2c2ad;border:2px solid #594b3e;border-radius:1px}
+  .swatch.bed{width:24px;height:17px;background:#7d563a;border:2px solid #49352a;border-radius:1px}
+  .swatch.bed::before{content:"";position:absolute;left:4px;right:4px;top:3px;bottom:3px;background:#e7dfd0;border:1px solid #9a8c79}
+  .swatch.bed::after{content:"";position:absolute;left:6px;right:6px;top:4px;height:3px;background:#d5c4ab}
+  .swatch.chair{width:18px;height:18px;margin-left:3px;background:#9a704d;border:2px solid #49352a;border-radius:3px}
+  .swatch.chair::before{content:"";position:absolute;left:2px;right:2px;top:-4px;height:6px;background:#765238;border:1px solid #49352a;border-radius:2px}
+  .swatch.door{width:8px;height:18px;margin-left:8px;background:#9a6841;border:2px solid #6a4127;border-radius:1px}
+  .swatch.door::before{content:"";position:absolute;left:2px;right:2px;top:5px;height:2px;background:#d7b07a}
+  .swatch.marble{width:24px;height:18px;margin:0;background:#eeeae1;border:1px solid #7d766c;border-radius:2px;position:relative;overflow:hidden;flex:0 0 24px}
+  .swatch.marble.plain::before{content:"";position:absolute;left:11px;top:2px;width:1px;height:14px;background:rgba(120,115,106,.45);box-shadow:-7px 6px 0 -0.2px rgba(120,115,106,.35),7px -6px 0 -0.2px rgba(120,115,106,.35)}
+  .swatch.marble.plain::after{content:"";position:absolute;left:4px;top:8px;width:16px;height:1px;background:rgba(120,115,106,.45)}
+  .swatch.marble.checker{background-image:linear-gradient(45deg,rgba(95,92,86,.20) 25%,transparent 25%,transparent 75%,rgba(95,92,86,.20) 75%),linear-gradient(45deg,rgba(160,155,145,.14) 25%,transparent 25%,transparent 75%,rgba(160,155,145,.14) 75%);background-size:8px 8px;background-position:0 0,4px 4px}
+  .swatch.marble.diamond::before{content:"";position:absolute;inset:3px 5px;border:1px solid rgba(105,99,90,.45);transform:rotate(45deg);transform-origin:center}
+  .swatch.marble.diamond::after{content:"";position:absolute;inset:3px 5px;border:1px solid rgba(105,99,90,.28);transform:rotate(-45deg);transform-origin:center}
+  .swatch.marble.mosaic::before{content:"•••••••••";position:absolute;left:4px;top:1px;width:16px;height:16px;line-height:5px;font-size:7px;letter-spacing:1px;color:rgba(110,105,96,.45);overflow:hidden}
+  .swatch.marble.mosaic::after{content:"";position:absolute;inset:3px 5px;border:1px solid rgba(100,96,89,.30)}
+  .swatch.marble.bw::before{content:"◇◆◇◆";position:absolute;left:2px;top:1px;font-size:8px;letter-spacing:1px;color:#3f3b36}
+  .swatch.marble.bw::after{content:"◆◇◆◇";position:absolute;left:2px;top:9px;font-size:8px;letter-spacing:1px;color:#6d6860}
+  .swatch.marble.rc::before{content:"◇◆◇◆";position:absolute;left:2px;top:1px;font-size:8px;letter-spacing:1px;color:#9b3a32}
+  .swatch.marble.rc::after{content:"◆◇◆◇";position:absolute;left:2px;top:9px;font-size:8px;letter-spacing:1px;color:#b98b72}
+  .swatch.column{width:18px;height:18px;margin-left:3px;background:#eee9df;border:2px solid #34312c;border-radius:50%}
+  .swatch.fountain{width:24px;height:18px;margin:0;background:#d8d0c2;border:2px solid #625a4d;border-radius:50%}
+  .swatch.fountain::before{content:"";position:absolute;left:5px;right:5px;top:3px;height:6px;background:#2f8fce;border:1px solid #236f9e;border-radius:50%}
+  .swatch.fountain::after{content:"";position:absolute;left:10px;top:-5px;width:4px;height:8px;background:#2f8fce;border-radius:50% 50% 40% 40%;box-shadow:0 -4px 0 -1px rgba(47,143,206,.75)}
+  .swatch.furnace{width:20px;height:20px;margin-left:2px;background:#9a7560;border:2px solid #463a34;border-radius:2px;box-shadow:inset 0 -6px 0 #2b2522}
+  .swatch.counter{width:24px;height:18px;background:#80664d;border:2px solid #4d4035;border-radius:2px;position:relative}
+  .swatch.counter::before{content:"";position:absolute;left:3px;right:3px;top:2px;height:4px;background:#c2b29e;border:1px solid #66584a}
+  .swatch.counter::after{content:"•••";position:absolute;left:4px;top:3px;font-size:9px;line-height:12px;letter-spacing:3px;color:#b8875d}
+  .swatch.furnace::before{content:"";position:absolute;left:7px;bottom:2px;width:7px;height:5px;background:#e3a12e;border-radius:50% 50% 40% 40%}
+  .swatch.cabinet{width:22px;height:19px;margin-left:1px;background:#8a633f;border:2px solid #4d3828;border-radius:2px;box-shadow:inset 3px 3px 0 rgba(255,255,255,.12), inset -3px -3px 0 rgba(50,35,25,.12)}
+  .swatch.cabinet::before{content:"";position:absolute;left:4px;right:4px;top:5px;height:7px;border:1px solid #d1b58d;background:#b99368;border-radius:1px;box-shadow:0 0 0 1px rgba(77,56,40,.35)}
+  .swatch.cabinet::after{content:"";position:absolute;left:10px;top:7px;width:3px;height:3px;background:#5a3e2b;border-radius:50%}
+  .swatch.amphora{width:17px;height:21px;margin-left:3px;background:#b8784f;border:2px solid #5b4030;border-radius:45% 45% 35% 35% / 35% 35% 45% 45%;position:relative}
+  .swatch.amphora::before{content:"";position:absolute;left:5px;top:-6px;width:5px;height:7px;background:#b8784f;border:2px solid #5b4030;border-bottom:0;border-radius:3px 3px 0 0}
+  .swatch.amphora::after{content:"";position:absolute;left:-5px;right:-5px;top:4px;height:7px;border-left:2px solid #5b4030;border-right:2px solid #5b4030;border-radius:50%}
+  .swatch.lararium{width:24px;height:20px;margin-left:1px;background:#d2c3a9;border:2px solid #655646;position:relative;border-radius:1px}
+  .swatch.lararium::before{content:"";position:absolute;left:4px;right:4px;top:-7px;height:8px;background:#b89b73;clip-path:polygon(50% 0,100% 100%,0 100%);border:1px solid #655646}
+  .swatch.lararium::after{content:"▥";position:absolute;left:7px;top:3px;color:#8d503f;font-size:10px;line-height:12px}
+  .swatch.column::before{content:"";position:absolute;left:5px;top:5px;width:4px;height:4px;background:#aaa399;border-radius:50%}
+  main{
+    padding:18px;
+    min-width:0;
+    overflow:auto;
+  }
+  .workspace{
+    width:min(100%, 980px);
+    margin:0 auto;
+  }
+  .canvas-wrap{
+    position:relative;
+    width:100%;
+    background:#000;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,.18);
+    border:2px solid #211f1c;
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:auto;
+    touch-action:none;
+    cursor:crosshair;
+  }
+  .status{
+    margin-top:10px;
+    padding:9px 12px;
+    background:white;
+    border:1px solid #d5ccbe;
+    border-radius:9px;
+    font-size:13px;
+  }
+  .assignment-checklist{
+    margin:6px auto 0;
+    max-width:1180px;
+    padding:8px 18px 10px;
+    background:#fffdf8;
+    color:var(--ink);
+    border-top:1px solid #d5ccbe;
+    border-bottom:1px solid #d5ccbe;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .assignment-checklist h2{
+    margin:0 0 4px;
+    font-size:15px;
+  }
+  .assignment-checklist .intro{
+    margin:0 0 5px;
+    font-size:13px;
+    line-height:1.45;
+  }
+  .checklist{
+    margin:0;
+    padding-left:0;
+    list-style:none;
+    font-size:13px;
+    line-height:1.45;
+    display:grid;
+    gap:4px;
+  }
+  .check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:7px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .check-item input{
+    margin-top:3px;
+    accent-color:#5b4938;
+    cursor:pointer;
+    flex:0 0 auto;
+  }
+  .check-item .check-text{cursor:pointer;}
+  .check-item input:checked + .check-text{
+    text-decoration:line-through;
+    text-decoration-thickness:2px;
+    opacity:.58;
+  }
+  .label-checks{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px 12px;
+    margin:3px 0 4px 24px;
+  }
+  .label-check{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .label-check input{margin:0;accent-color:#5b4938;cursor:pointer;}
+  .label-check input:checked + span{
+    text-decoration:line-through;
+    text-decoration-thickness:2px;
+    opacity:.58;
+  }
+  .small{font-size:12px;color:#6b655d}
+  kbd{
+    border:1px solid #c9c0b4;
+    background:#f4f1eb;
+    border-radius:4px;
+    padding:1px 4px;
+    font-size:11px;
+  }
+  @media(max-width:850px){
+    .app{grid-template-columns:1fr}
+    aside{border-right:0;border-bottom:1px solid #c8beae}
+    .panel{margin-bottom:9px}
+    .labels{max-height:130px;overflow:auto}
+  }
+#plan{touch-action:none;user-select:none;cursor:crosshair;}
+</style>
+
+<style id="compact-layout-overrides">
+  /* Compact overall layout without changing the left tool-panel width. */
+  body { margin: 0; }
+  header { padding: 10px 16px !important; }
+  header h1 { margin: 0 0 4px !important; }
+  header p { margin: 0 !important; }
+  main { gap: 12px !important; padding: 10px 12px !important; }
+  .panel { padding: 10px !important; margin-bottom: 8px !important; }
+  .panel h2 { margin: 0 0 7px !important; }
+  .panel p { margin: 5px 0 !important; }
+  .small { margin: 4px 0 !important; }
+  .tool-grid { gap: 5px !important; }
+  button { padding: 7px 9px !important; }
+  .marble-grid { gap: 5px !important; }
+  .marble-choice { padding: 5px !important; }
+  .status { margin-top: 6px !important; padding: 7px !important; }
+  .checklist { margin-top: 6px !important; }
+  .checklist li { margin: 2px 0 !important; }
+  .canvas-wrap { margin: 0 !important; padding: 0 !important; }
+  canvas { display: block; }
+  footer { padding: 6px 12px !important; margin: 0 !important; }
+</style>
+
+
+<style id="tight-grid-area">
+  /* The 20x20 grid remains 62px per cell internally.
+     Only the unused canvas area around it has been cropped. */
+  .workspace {
+    width: min(100%, 794px) !important;
+    margin: 0 !important;
+  }
+
+  .canvas-wrap {
+    width: 794px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  #plan {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  main {
+    align-items: start !important;
+    gap: 8px !important;
+    padding: 4px 8px !important;
+  }
+</style>
+
+
+<style id="final-compact-layout">
+  /* Give the unchanged tool area more horizontal room; do not make it narrower. */
+  .app {
+    grid-template-columns: 360px minmax(0, 1fr) !important;
+    min-height: calc(100vh - 75px) !important;
+  }
+
+  aside {
+    padding: 10px !important;
+  }
+
+  .panel {
+    padding: 11px !important;
+    margin-bottom: 9px !important;
+  }
+
+  .sidebar-scroll {
+    max-height: calc(100vh - 105px) !important;
+    padding-right: 3px !important;
+  }
+
+  .tools {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .tools button {
+    padding: 9px 10px !important;
+  }
+
+  /* Smaller checklist, with the two requested requirements removed. */
+  .assignment-checklist {
+    max-width: 1280px !important;
+    margin: 4px auto 0 !important;
+    padding: 5px 14px 6px !important;
+  }
+
+  .assignment-checklist h2 {
+    margin: 0 0 2px !important;
+    font-size: 14px !important;
+  }
+
+  .assignment-checklist .intro {
+    margin: 0 0 3px !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  .label-checks {
+    gap: 3px 10px !important;
+    margin: 2px 0 3px 18px !important;
+  }
+
+  .checklist {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    gap: 2px !important;
+  }
+
+  .check-item {
+    gap: 5px !important;
+  }
+
+  /* Restore the full-size visual design grid. The canvas is cropped around
+     the actual 20x20 grid, so there is no large blank canvas around it. */
+  main {
+    padding: 4px 8px !important;
+    overflow: auto !important;
+  }
+
+  .workspace {
+    width: min(1240px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+    margin: 0 !important;
+  }
+
+  .canvas-wrap {
+    width: min(1240px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+    margin: 0 !important;
+  }
+
+  #plan {
+    width: min(1240px, calc(100vw - 390px)) !important;
+    height: auto !important;
+  }
+</style>
+
+
+<style id="right-sized-grid">
+  /* Smaller visible design area; internal grid coordinates remain unchanged. */
+  .workspace {
+    width: min(920px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+  }
+
+  .canvas-wrap {
+    width: min(920px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+  }
+
+  #plan {
+    width: min(920px, calc(100vw - 390px)) !important;
+    height: auto !important;
+    display: block;
+  }
+</style>
+
+
+<style id="slightly-smaller-grid">
+  .workspace {
+    width: min(870px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+  }
+  .canvas-wrap {
+    width: min(870px, calc(100vw - 390px)) !important;
+    max-width: calc(100vw - 390px) !important;
+  }
+  #plan {
+    width: min(870px, calc(100vw - 390px)) !important;
+    height: auto !important;
+  }
+</style>
+
+
+<style id="student-view-grid">
+  /* Fit the complete design grid on a typical student laptop screen.
+     The internal 20x20 / 62px grid is unchanged; only its displayed size changes. */
+  .workspace {
+    width: min(760px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(760px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  .canvas-wrap {
+    width: min(760px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(760px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  #plan {
+    width: min(760px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    height: auto !important;
+    display: block;
+  }
+
+  main {
+    overflow: hidden !important;
+  }
+</style>
+
+
+<style id="wider-student-grid">
+  /* Allow more horizontal width while still fitting the full grid vertically. */
+  .workspace {
+    width: min(850px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(850px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  .canvas-wrap {
+    width: min(850px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(850px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  #plan {
+    width: min(850px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    height: auto !important;
+  }
+</style>
+
+
+<style id="slightly-bigger-student-grid">
+  /* Slightly larger than 850px, while retaining the screen-height fit. */
+  .workspace {
+    width: min(900px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(900px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  .canvas-wrap {
+    width: min(900px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    max-width: min(900px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+  }
+
+  #plan {
+    width: min(900px, calc(100vw - 390px), calc(100vh - 255px)) !important;
+    height: auto !important;
+  }
+</style>
+
+
+<style id="fixed-800px-test">
+  /* TEST VERSION: fixed 800px display. No responsive auto-sizing. */
+  .workspace {
+    width: 800px !important;
+    max-width: 800px !important;
+  }
+
+  .canvas-wrap {
+    width: 800px !important;
+    max-width: 800px !important;
+  }
+
+  #plan {
+    width: 800px !important;
+    height: 800px !important;
+    display: block;
+  }
+
+  main {
+    overflow: auto !important;
+  }
+</style>
+
+
+<style id="fixed-750px-test">
+  /* TEST VERSION: fixed 750px display. No responsive auto-sizing. */
+  .workspace {
+    width: 750px !important;
+    max-width: 750px !important;
+  }
+
+  .canvas-wrap {
+    width: 750px !important;
+    max-width: 750px !important;
+  }
+
+  #plan {
+    width: 750px !important;
+    height: 750px !important;
+    display: block;
+  }
+</style>
+
+
+<style id="use-right-space">
+  main {
+    overflow: hidden !important;
+  }
+
+  .workspace {
+    width: min(100%, 1100px) !important;
+    max-width: 1100px !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: 750px minmax(220px, 1fr) !important;
+    column-gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .canvas-wrap {
+    width: 750px !important;
+    max-width: 750px !important;
+    margin: 0 !important;
+  }
+
+  #plan {
+    width: 750px !important;
+    height: 750px !important;
+    display: block;
+  }
+
+  .status {
+    margin-top: 0 !important;
+    align-self: start !important;
+    min-height: 150px;
+    padding: 12px !important;
+  }
+
+  @media (max-width: 1050px) {
+    .workspace {
+      grid-template-columns: 750px !important;
+    }
+    .status {
+      display: none;
+    }
+  }
+</style>
+
+
+<style id="fixed-700px-test">
+  /* TEST VERSION: fixed 700px display. */
+  .workspace {
+    width: min(100%, 1100px) !important;
+    max-width: 1100px !important;
+    grid-template-columns: 700px minmax(220px, 1fr) !important;
+  }
+
+  .canvas-wrap {
+    width: 700px !important;
+    max-width: 700px !important;
+  }
+
+  #plan {
+    width: 700px !important;
+    height: 700px !important;
+    display: block;
+  }
+</style>
+
+</head>
+<body>
+<header>
+  <h1>Roman Atrium House Designer</h1>
+  <div class="assignment-checklist" aria-label="Assignment Checklist">
+    <h2>Assignment Checklist</h2>
+    <div class="intro"><b>Your Atrium-Style house must have at least one of the following and be labeled correctly:</b></div>
+    <div class="label-checks">
+      <label class="label-check"><input type="checkbox"><span>faucēs</span></label>
+      <label class="label-check"><input type="checkbox"><span>taberna</span></label>
+      <label class="label-check"><input type="checkbox"><span>cubiculum</span></label>
+      <label class="label-check"><input type="checkbox"><span>peristylum</span></label>
+      <label class="label-check"><input type="checkbox"><span>trīclīnium</span></label>
+      <label class="label-check"><input type="checkbox"><span>ātrium</span></label>
+      <label class="label-check"><input type="checkbox"><span>hortus</span></label>
+      <label class="label-check"><input type="checkbox"><span>impluvium</span></label>
+      <label class="label-check"><input type="checkbox"><span>tablīnum</span></label>
+      <label class="label-check"><input type="checkbox"><span>culīna</span></label>
+    </div>
+    <ul class="checklist">
+      
+      <li><label class="check-item"><input type="checkbox"><span class="check-text">A Roman entering through the fauces should be able to see from the entrance through the atrium, tablinum, and to the peristyle. The view should not be blocked by any walls, but columns are fine.</span></label></li>
+      
+    </ul>
+  </div>
+</header>
+
+<div class="app">
+  <aside>
+    <div class="sidebar-scroll">
+    <div class="panel">
+      <h2>Choose a Tool</h2>
+      <div class="tools">
+        <button data-tool="wall" class="active">🧱 Wall</button>
+        <button data-tool="column">◯ Column</button>
+        <button data-tool="water">💧 Water</button>
+        <button data-tool="grass">🌿 Grass</button>
+        <button data-tool="statue">🗿 Roman bust</button>
+         <button data-tool="fountain">⛲ Fountain</button>
+         <button data-tool="counter">🍶 Thermopolium counter</button>
+         <button data-tool="furnace">🔥 Furnace</button>
+        <button data-tool="cabinet">📜 Scroll cabinet</button>
+        <button data-tool="amphora">🏺 Amphora</button>
+        <button data-tool="lararium">🏛️ Lararium</button>
+        <button data-tool="couch">🛋️ Triclinium couch</button>
+        <button data-tool="table">▦ Table</button>
+        <button data-tool="bed">🛏️ Bed</button>
+        <button data-tool="chair">🪑 Chair</button>
+        <button data-tool="door">🚪 Door</button>
+        <button data-tool="marble" class="active-marble">⬜ Marble</button>
+        <div id="marbleTypes" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+          <button type="button" class="marble-choice" data-marble="plain">Plain</button>
+          <button type="button" class="marble-choice" data-marble="checker">Checker</button>
+          <button type="button" class="marble-choice" data-marble="diamond">Diamond</button>
+          <button type="button" class="marble-choice" data-marble="mosaic">Mosaic</button>
+          <button type="button" class="marble-choice" data-marble="bw">Black &amp; White Roman</button>
+          <button type="button" class="marble-choice" data-marble="rc">Red &amp; Cream Roman</button>
+        </div>
+        <button data-tool="select">↖ Select</button>
+        <button data-tool="erase">⌫ Erase</button>
+      </div>
+      <p class="hint" id="toolHint">
+        Drag from one grid line to another. The wall will snap to the plan lines.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>Quick controls</h2>
+      <div class="actions">
+        <button id="undoBtn">↶ Undo</button>
+        <button id="redoBtn">↷ Redo</button>
+        <button id="resetBtn">Reset</button>
+        <button id="saveBtn">Save design (JSON)</button>
+        <button id="jpgBtn">Save layout (JPG)</button>
+        <button id="loadBtn">Load design</button>
+      </div>
+      <input id="fileInput" type="file" accept=".json" hidden>
+      <p class="small">Save design creates a JSON file; Save layout exports the visible plan as a JPG image.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Room Labels — drag onto the plan</h2>
+      <div class="labels" id="labelTray">
+        <div class="label" draggable="true" data-label="faucēs" title="entrance">faucēs</div>
+        <div class="label" draggable="true" data-label="taberna" title="shops located along the street">taberna</div>
+        <div class="label" draggable="true" data-label="cubiculum" title="bedrooms that were located along the atrium and the peristyle">cubiculum</div>
+        <div class="label" draggable="true" data-label="peristylum" title="The peristyle which was a walkway surrounded by columns">peristylum</div>
+        <div class="label" draggable="true" data-label="trīclīnium" title="dining room with three couches">trīclīnium</div>
+        <div class="label" draggable="true" data-label="ātrium" title="entrance hall where guests were received">ātrium</div>
+        <div class="label" draggable="true" data-label="hortus" title="the garden that was surrounded by the peristyle">hortus</div>
+        <div class="label" draggable="true" data-label="impluvium" title="pool of water in the middle of the atrium with a hole in the roof above it to collect rainwater.">impluvium</div>
+        <div class="label" draggable="true" data-label="tablīnum" title="The study and where the owner met with guests">tablīnum</div>
+        <div class="label" draggable="true" data-label="culīna" title="The kitchen">culīna</div>
+      </div>
+      <p class="hint">You can move a placed label with <b>Select</b>. Double-click a label to remove it.</p>
+    </div>
+
+    </div>
+  </aside>
+
+  <main>
+    <div class="workspace">
+      <div class="canvas-wrap">
+        <canvas id="plan" width="1280" height="1280" aria-label="Roman house plan"></canvas>
+      </div>
+      <div class="status" id="status">
+        <b>Tip:</b> Start by drawing walls on the existing grid. Use the Fountain tool to add a one-square Roman fountain, or the Amphora tool to add storage jars; water fills the square you click, and columns snap to nearby grid intersections.
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("plan");
+  const ctx = canvas.getContext("2d");
+  const status = document.getElementById("status");
+  const toolHint = document.getElementById("toolHint");
+  const W = canvas.width, H = canvas.height;
+
+  // Exact geometry of the supplied Roman House Layout spreadsheet.
+  // The workbook uses a complete 20 x 20 grid: C4:V23.
+  // Every cell is editable and all cells are rendered as true squares.
+  const CELL = 62;
+  const X0 = 20; // small margin around the 20x20 design grid
+  const Y0 = 20; // small margin around the 20x20 design grid
+  const xLines = Array.from({length:21}, (_,i)=>X0+i*CELL); // D:X bounding-box boundaries
+  const yLines = Array.from({length:21}, (_,i)=>Y0+i*CELL); // 4:24 bounding-box boundaries
+
+  // Every structural/grid line in the spreadsheet is on one of these cell
+  // boundaries, so snapping to the regular grid is sufficient.
+  const heavyX = xLines;
+  const heavyY = yLines;
+
+  // Exact cell-border geometry read from the supplied Roman House Layout.xlsx.
+  // The spreadsheet is an irregular footprint rather than a 20x20 square.
+  // Coordinates are indexed against the D4:W23 bounding box.
+  const borderRows = {
+    left: ["....................", "....................", "....................", "....................", "t...................", "t...................", "t...................", "t...................", "t...................", "t...................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "...................."],
+    right: [".............tdddddt", "tddddddddddddddddddt", "tddddddddddddddddddt", "tddddddddddddddddddt", "dddddddddddddddddddt", "dddddddddddddddddddt", "dddddddddddddddddddt", "dddddddddddddddddddt", "dddddddddddddddddddt", "dddddddddddddddddddt", ".tddddddddddddddddt.", ".tddddddddddddddddt.", ".tddddddddddddddddt.", ".tddddddddddddddddt.", ".tddddddddddddddddt.", ".tddddddddddddddddt.", ".tdddddddddddddt....", ".tdddddddddddddt....", ".tdddddddddddddt....", ".tdddddddddddddt...."],
+    top: ["..............tttttt", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "....................", "...................."],
+    bottom: [".tttttttttttttdddddd", ".ddddddddddddddddddd", ".ddddddddddddddddddd", "tddddddddddddddddddd", "dddddddddddddddddddd", "dddddddddddddddddddd", "dddddddddddddddddddd", "dddddddddddddddddddd", "dddddddddddddddddddd", "ttdddddddddddddddddt", "..ddddddddddddddddd.", "..ddddddddddddddddd.", "..ddddddddddddddddd.", "..ddddddddddddddddd.", "..ddddddddddddddddd.", "..ddddddddddddddttt.", "..dddddddddddddd....", "..dddddddddddddd....", "..dddddddddddddd....", "..tttttttttttttt...."]
+  };
+  function borderStyle(ch) {
+    if(ch === 't') return {color:'#252525', width:5};
+    if(ch === 'd') return {color:'rgba(80,76,70,.55)', width:1.5};
+    return null;
+  }
+
+  let tool = "wall";
+  let walls = [];
+  let columns = [];
+  let waters = [];
+  let grasses = [];
+  let statues = [];
+  let fountains = [];
+  let counters = [];
+  let furnaces = [];
+  let cabinets = [];
+  let amphorae = [];
+  let lararia = [];
+  let couches = [];
+  let tables = [];
+  let beds = [];
+  let chairs = [];
+  let doors = [];
+  let marbles = [];
+  let selectedMarbleType = "plain";
+  let labels = [];
+  let history = [];
+  let redoHistory = [];
+  let eraseDragging = false;
+  let tileDragging = false;
+  let tileLastCell = null;
+  let tileUndoSaved = false;
+  let eraseHistorySnapshot = null;
+  let eraseChanged = false;
+  let eraseLastKey = "";
+  let drawing = false;
+  let start = null;
+  let preview = null;
+  let dragLabel = null;
+  let dragOffset = {x:0,y:0};
+
+  const roomDescriptions = {
+    "faucēs": "entrance",
+    "ātrium": "entrance hall where guests were received",
+    "tablīnum": "The study and where the owner met with guests",
+    "taberna": "shops located along the street",
+    "peristylum": "The peristyle which was a walkway surrounded by columns",
+    "trīclīnium": "dining room with three couches",
+    "hortus": "the garden that was surrounded by the peristyle",
+    "impluvium": "pool of water in the middle of the atrium with a hole in the roof above it to collect rainwater.",
+    "cubiculum": "bedrooms that were located along the atrium and the peristyle",
+    "culīna": "The kitchen"
+  };
+  let hoverLabelIndex = -1;
+  let labelHoverTimer = null;
+  const labelTooltip = document.createElement("div");
+  labelTooltip.className = "label-tooltip";
+  document.body.appendChild(labelTooltip);
+
+  function showLabelTooltip(text, clientX, clientY){
+    if(!text || !roomDescriptions[text]){ labelTooltip.style.display="none"; return; }
+    labelTooltip.textContent = roomDescriptions[text];
+    labelTooltip.style.left = (clientX + 14) + "px";
+    labelTooltip.style.top = (clientY + 14) + "px";
+    labelTooltip.style.display = "block";
+  }
+  function hideLabelTooltip(){
+    if(labelHoverTimer){ clearTimeout(labelHoverTimer); labelHoverTimer=null; }
+    labelTooltip.style.display="none";
+    hoverLabelIndex=-1;
+  }
+  function scheduleLabelTooltip(text, clientX, clientY){
+    if(labelHoverTimer) clearTimeout(labelHoverTimer);
+    labelTooltip.style.display="none";
+    labelHoverTimer=setTimeout(()=>{
+      labelHoverTimer=null;
+      showLabelTooltip(text, clientX, clientY);
+    },1000);
+  }
+
+  const toolText = {
+    wall: "Drag from one grid line or thick boundary line to another. Walls snap to both.",
+    column: "Click near a grid intersection to place a circular column.",
+    water: "Click or drag across squares to add water. Dragging paints continuously.",
+    grass: "Click or drag across squares to add greenery. Dragging paints continuously.",
+    statue: "Click a square to place a small Roman bust above the tile beneath it. Click the same square again to remove it.",
+    fountain: "Click a square to place a Roman-style fountain basin with a central pedestal and water. Click it again to remove it.",
+    counter: "Click a square to place a thermopolium counter with three dolia (large storage jars). Click an existing counter again to rotate it 90°.",
+    furnace: "Click a square to place a Roman-style cooking furnace. It is a single square and can be placed near the thermopolium counter.",
+    cabinet: "Click a square to place a wooden Roman-style cabinet for scroll storage. Click an existing cabinet again to rotate it 90°.",
+    amphora: "Click a square to place a Roman amphora storage jar. Click it again to remove it.",
+    lararium: "Click a square to place a temple-shaped household shrine inspired by the House of the Vettii lararium. Click it again to remove it.",
+    couch: "Click and drag across two adjacent squares to place a Roman lounging couch without a back. It snaps horizontally or vertically.",
+    table: "Click squares to add a simple square Roman dining table. Adjacent table squares connect into one larger table.",
+    bed: "Click and drag across two adjacent squares to place a Roman-style bed. It snaps horizontally or vertically.",
+    chair: "Click a square to add a chair. Click an existing chair again to rotate it 90°.",
+    door: "Click a grid line to add a doorway one square long. Doors snap to the nearest horizontal or vertical line.",
+    marble: "Choose a marble style, then click or drag across squares to apply it. Dragging paints continuously.",
+    select: "Drag a placed label to move it. Double-click a label to remove it.",
+    erase: "Click or drag across wall sections, columns, water, grass, marble, statues, fountains, counters, furnaces, cabinets, amphorae, lararia, couches, tables, beds, doors, or labels to remove them."
+  };
+
+  function snapshot() {
+    return JSON.stringify({version:18,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels});
+  }
+  function pushHistory() {
+    history.push(snapshot());
+    if(history.length > 60) history.shift();
+    redoHistory = [];
+  }
+  function restore(s) {
+    const d = JSON.parse(s);
+    if(!d || typeof d !== "object") throw new Error("Invalid design file");
+    walls = Array.isArray(d.walls) ? d.walls : [];
+    columns = Array.isArray(d.columns) ? d.columns : [];
+
+    // Backward-compatible loader for designs saved by earlier versions.
+    // Older builds used a local R4:W4 strip and, before version 8, the grid
+    // did not include the current top row. Convert those coordinates into
+    // the current 20 x 20 global grid before drawing.
+    const legacyCellGrid = (d.version || 0) < 8;
+    const shiftY = legacyCellGrid ? 1 : 0;
+    const normalizeCell = o => {
+      if(!o || typeof o !== "object") return o;
+
+      // These coordinate conversions were needed by older/intermediate files,
+      // but must NOT run on the current version-18 history snapshots.
+      // Otherwise current C4:H4 cells (ix 0..5, iy 0) are incorrectly moved
+      // to Q4:V4 every time Undo or Redo restores a snapshot.
+      if((d.version || 0) < 18) {
+        // Legacy/intermediate builds stored the old R4:W4 area as ix 0..5.
+        // Those cells belong at the right side of the current global row.
+        if(o.iy===0 && o.ix>=0 && o.ix<6 && o.topRight===true) {
+          return {...o, ix:o.ix+14, iy:0, topRight:false};
+        }
+        if(o.iy===0 && o.ix>=0 && o.ix<6) {
+          return {...o, ix:o.ix+14, iy:0, topRight:false};
+        }
+
+        // Preserve the special D8 correction used by intermediate builds.
+        if(o.special==="D8" || o.key==="D8") {
+          return {...o, ix:0, iy:4, topRight:false};
+        }
+      }
+
+      return {...o, iy:(Number.isFinite(o.iy) ? o.iy : 0) + shiftY, topRight:false};
+    };
+    const shiftCells = arr => Array.isArray(arr) ? arr.map(normalizeCell).filter(Boolean) : [];
+    waters = shiftCells(d.waters);
+    grasses = shiftCells(d.grasses);
+    statues = shiftCells(d.statues);
+    fountains = shiftCells(d.fountains);
+    counters = shiftCells(d.counters);
+    furnaces = shiftCells(d.furnaces);
+    cabinets = shiftCells(d.cabinets);
+    amphorae = shiftCells(d.amphorae);
+    lararia = shiftCells(d.lararia);
+    couches = shiftCells(d.couches);
+    tables = shiftCells(d.tables);
+    beds = shiftCells(d.beds);
+    chairs = shiftCells(d.chairs).map(c=>({...c,dir:c.dir||0,topRight:false}));
+    counters = shiftCells(d.counters).map(c=>({...c,dir:c.dir||0,topRight:false}));
+    cabinets = shiftCells(d.cabinets).map(c=>({...c,dir:c.dir||0,topRight:false}));
+    marbles = shiftCells(d.marbles).map(m=>({...m,type:m.type||"plain",topRight:false}));
+    doors = d.doors || [];
+    selectedMarbleType = d.selectedMarbleType || "plain";
+    labels = d.labels || [];
+    // Designs saved under the old square-grid version may contain objects in
+    // cells that are outside the new spreadsheet footprint. Do not display them.
+    const keepValid = arr => Array.isArray(arr) ? arr.filter(o => !('ix' in o) || isEditableMain(o.ix,o.iy)) : [];
+    waters=keepValid(waters); grasses=keepValid(grasses); statues=keepValid(statues);
+    fountains=keepValid(fountains); counters=keepValid(counters); furnaces=keepValid(furnaces);
+    cabinets=keepValid(cabinets); amphorae=keepValid(amphorae); lararia=keepValid(lararia);
+    couches=couches.filter(o => validTwoCellPlacement(o)); tables=keepValid(tables);
+    beds=beds.filter(o => validTwoCellPlacement(o)); chairs=keepValid(chairs); marbles=keepValid(marbles);
+    draw();
+  }
+
+  function setTool(t) {
+    tool = t;
+    document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("active", b.dataset.tool === t));
+    canvas.style.cursor = t === "select" ? "default" : t === "erase" ? "not-allowed" : "crosshair";
+    toolHint.textContent = toolText[t];
+  }
+  document.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+
+  document.querySelectorAll(".marble-choice").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedMarbleType = btn.dataset.marble;
+      document.querySelectorAll(".marble-choice").forEach(b => b.classList.toggle("active", b===btn));
+      setTool("marble");
+      status.innerHTML = "<b>Marble style selected:</b> " + btn.textContent + ". Click floor squares to apply it.";
+    });
+  });
+  document.querySelector('.marble-choice[data-marble="plain"]').classList.add("active");
+
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height};
+  }
+  function nearestIndex(v, arr) {
+    let best=0, dist=Math.abs(v-arr[0]);
+    for(let i=1;i<arr.length;i++){
+      const d=Math.abs(v-arr[i]);
+      if(d<dist){best=i;dist=d;}
+    }
+    return best;
+  }
+  function nearest(v, arr) {
+    let best=arr[0], dist=Math.abs(v-arr[0]);
+    for(const n of arr.slice(1)){
+      const d=Math.abs(v-n);
+      if(d<dist){best=n;dist=d;}
+    }
+    return best;
+  }
+  function nearestLinePoint(p) {
+    return {x:nearest(p.x,heavyX), y:nearest(p.y,heavyY)};
+  }
+  
+  // Canonical spreadsheet coordinates: C4 is (0,0) and V23 is (19,19).
+  // The supplied workbook is a complete 20 x 20 editable grid.
+  function isD8Cell(o){ return !!o && o.special==="D8"; }
+
+  function cellRect(o) {
+    if(isD8Cell(o)) return {x:xLines[0],y:yLines[4],w:CELL,h:CELL};
+    return {x:xLines[o.ix],y:yLines[o.iy],
+            w:xLines[o.ix+1]-xLines[o.ix],
+            h:yLines[o.iy+1]-yLines[o.iy]};
+  }
+  function cellKey(o){
+    if(isD8Cell(o)) return "0,4";
+    return `${o.ix},${o.iy}`;
+  }
+  function sameCell(a,b){ return !!a && !!b && cellKey(a)===cellKey(b); }
+
+  // Cells enclosed by the spreadsheet's thick boundary.  This is the actual
+  // student design footprint; cells outside it are blank and not placeable.
+  const validCells = new Set([[14, 0], [15, 0], [16, 0], [17, 0], [18, 0], [19, 0], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1], [9, 1], [10, 1], [11, 1], [12, 1], [13, 1], [14, 1], [15, 1], [16, 1], [17, 1], [18, 1], [19, 1], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2], [11, 2], [12, 2], [13, 2], [14, 2], [15, 2], [16, 2], [17, 2], [18, 2], [19, 2], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3], [12, 3], [13, 3], [14, 3], [15, 3], [16, 3], [17, 3], [18, 3], [19, 3], [0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [12, 4], [13, 4], [14, 4], [15, 4], [16, 4], [17, 4], [18, 4], [19, 4], [0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [11, 5], [12, 5], [13, 5], [14, 5], [15, 5], [16, 5], [17, 5], [18, 5], [19, 5], [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6], [15, 6], [16, 6], [17, 6], [18, 6], [19, 6], [0, 7], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [19, 7], [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [15, 8], [16, 8], [17, 8], [18, 8], [19, 8], [0, 9], [1, 9], [2, 9], [3, 9], [4, 9], [5, 9], [6, 9], [7, 9], [8, 9], [9, 9], [10, 9], [11, 9], [12, 9], [13, 9], [14, 9], [15, 9], [16, 9], [17, 9], [18, 9], [19, 9], [2, 10], [3, 10], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10], [10, 10], [11, 10], [12, 10], [13, 10], [14, 10], [15, 10], [16, 10], [17, 10], [18, 10], [2, 11], [3, 11], [4, 11], [5, 11], [6, 11], [7, 11], [8, 11], [9, 11], [10, 11], [11, 11], [12, 11], [13, 11], [14, 11], [15, 11], [16, 11], [17, 11], [18, 11], [2, 12], [3, 12], [4, 12], [5, 12], [6, 12], [7, 12], [8, 12], [9, 12], [10, 12], [11, 12], [12, 12], [13, 12], [14, 12], [15, 12], [16, 12], [17, 12], [18, 12], [2, 13], [3, 13], [4, 13], [5, 13], [6, 13], [7, 13], [8, 13], [9, 13], [10, 13], [11, 13], [12, 13], [13, 13], [14, 13], [15, 13], [16, 13], [17, 13], [18, 13], [2, 14], [3, 14], [4, 14], [5, 14], [6, 14], [7, 14], [8, 14], [9, 14], [10, 14], [11, 14], [12, 14], [13, 14], [14, 14], [15, 14], [16, 14], [17, 14], [18, 14], [2, 15], [3, 15], [4, 15], [5, 15], [6, 15], [7, 15], [8, 15], [9, 15], [10, 15], [11, 15], [12, 15], [13, 15], [14, 15], [15, 15], [16, 15], [17, 15], [18, 15], [2, 16], [3, 16], [4, 16], [5, 16], [6, 16], [7, 16], [8, 16], [9, 16], [10, 16], [11, 16], [12, 16], [13, 16], [14, 16], [15, 16], [2, 17], [3, 17], [4, 17], [5, 17], [6, 17], [7, 17], [8, 17], [9, 17], [10, 17], [11, 17], [12, 17], [13, 17], [14, 17], [15, 17], [2, 18], [3, 18], [4, 18], [5, 18], [6, 18], [7, 18], [8, 18], [9, 18], [10, 18], [11, 18], [12, 18], [13, 18], [14, 18], [15, 18], [2, 19], [3, 19], [4, 19], [5, 19], [6, 19], [7, 19], [8, 19], [9, 19], [10, 19], [11, 19], [12, 19], [13, 19], [14, 19], [15, 19]].map(([ix,iy]) => `${ix},${iy}`));
+  function isEditableMain(ix, iy){
+    return ix>=0 && ix<20 && iy>=0 && iy<20 && validCells.has(`${ix},${iy}`);
+  }
+
+  function isValidGridPoint(p){
+    const xi=nearestIndex(p.x,xLines), yi=nearestIndex(p.y,yLines);
+    const nearX=Math.abs(p.x-xLines[xi])<3, nearY=Math.abs(p.y-yLines[yi])<3;
+    if(!nearX && !nearY) return false;
+    for(let dy=-1;dy<=0;dy++) for(let dx=-1;dx<=0;dx++){
+      if(isEditableMain(xi+dx,yi+dy)) return true;
+    }
+    return false;
+  }
+
+  function cellAt(p) {
+    const ix=Math.floor((p.x-X0)/CELL);
+    const iy=Math.floor((p.y-Y0)/CELL);
+    if(!isEditableMain(ix,iy)) return null;
+    return {ix,iy,x:xLines[ix],y:yLines[iy],w:CELL,h:CELL,topRight:false};
+  }
+
+  function cellCenter(c){return {x:c.x+c.w/2,y:c.y+c.h/2};}
+
+  function drawSpreadsheetLayout() {
+    ctx.fillStyle = "#fbf8f0";
+    ctx.fillRect(0,0,W,H);
+
+    // Only the spreadsheet footprint is treated as usable floor. Render its
+    // exact dotted/thick borders, leaving the cells outside the footprint blank.
+    for(let r=0;r<20;r++) {
+      for(let c=0;c<20;c++) {
+        const x=xLines[c], y=yLines[r], w=CELL, h=CELL;
+        const usable=isEditableMain(c,r);
+        const sides=[
+          ['left', borderRows.left[r][c], x, y, x, y+h],
+          ['right', borderRows.right[r][c], x+w, y, x+w, y+h],
+          ['top', borderRows.top[r][c], x, y, x+w, y],
+          ['bottom', borderRows.bottom[r][c], x, y+h, x+w, y+h]
+        ];
+        for(const [,ch,x1,y1,x2,y2] of sides) {
+          const st=borderStyle(ch);
+          if(!st) continue;
+          // Keep the boundary even when the cell on the outside is not usable.
+          const isBoundary = ch==='t';
+          if(!usable && !isBoundary) continue;
+          ctx.save();
+          ctx.strokeStyle=st.color;
+          ctx.lineWidth=st.width;
+          ctx.lineCap='butt';
+          if(ch==='d') ctx.setLineDash([1.5,2.5]); else ctx.setLineDash([]);
+          ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    drawSpreadsheetLayout();
+
+
+
+    // Marble floor styles.
+    for(const m of marbles){
+      const c = cellRect(m);
+      const type=m.type||"plain";
+      ctx.save();
+      ctx.fillStyle = "#eeeae1";
+      ctx.fillRect(c.x+2,c.y+2,c.w-4,c.h-4);
+
+      if(type==="plain"){
+        ctx.strokeStyle="rgba(120,115,106,.20)";
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(c.x+c.w/2,c.y+4); ctx.lineTo(c.x+c.w/2,c.y+c.h-4);
+        ctx.moveTo(c.x+4,c.y+c.h/2); ctx.lineTo(c.x+c.w-4,c.y+c.h/2);
+        ctx.stroke();
+      } else if(type==="checker"){
+        const rows=4, cols=4, cw=c.w/cols, ch=c.h/rows;
+        for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){
+          if((r+col)%2===0){
+            ctx.fillStyle="rgba(95,92,86,.16)";
+            ctx.fillRect(c.x+2+col*cw,c.y+2+r*ch,cw,ch);
+          }
+        }
+        ctx.strokeStyle="rgba(100,96,89,.25)";
+        ctx.lineWidth=1;
+        for(let r=1;r<rows;r++){ctx.beginPath();ctx.moveTo(c.x+2,c.y+2+r*ch);ctx.lineTo(c.x+c.w-2,c.y+2+r*ch);ctx.stroke();}
+        for(let col=1;col<cols;col++){ctx.beginPath();ctx.moveTo(c.x+2+col*cw,c.y+2);ctx.lineTo(c.x+2+col*cw,c.y+c.h-2);ctx.stroke();}
+      } else if(type==="diamond"){
+        ctx.strokeStyle="rgba(105,99,90,.28)";
+        ctx.lineWidth=1.6;
+        // Lower the bust slightly so the complete head remains inside its square.
+      const cx=c.x+c.w/2, cy=c.y+c.h/2+8;
+        const inset=7;
+        ctx.beginPath();
+        ctx.moveTo(cx,c.y+inset);
+        ctx.lineTo(c.x+c.w-inset,cy);
+        ctx.lineTo(cx,c.y+c.h-inset);
+        ctx.lineTo(c.x+inset,cy);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(c.x+inset,cy);
+        ctx.lineTo(cx,c.y+inset);
+        ctx.lineTo(c.x+c.w-inset,cy);
+        ctx.lineTo(cx,c.y+c.h-inset);
+        ctx.closePath();
+        ctx.stroke();
+      } else if(type==="mosaic"){
+        ctx.strokeStyle="rgba(120,115,106,.25)";
+        ctx.lineWidth=1;
+        const step=Math.max(13,Math.min(18,Math.floor(c.w/5)));
+        for(let yy=c.y+8;yy<c.y+c.h-6;yy+=step){
+          for(let xx=c.x+8;xx<c.x+c.w-6;xx+=step){
+            ctx.beginPath();
+            ctx.arc(xx,yy,2.4,0,Math.PI*2);
+            ctx.fillStyle=((Math.floor(xx/step)+Math.floor(yy/step))%2===0) ? "rgba(110,105,96,.24)" : "rgba(160,155,145,.20)";
+            ctx.fill();
+          }
+        }
+        ctx.strokeStyle="rgba(100,96,89,.18)";
+        ctx.strokeRect(c.x+5,c.y+5,c.w-10,c.h-10);
+      } else if(type==="bw"){
+        // Roman black-and-white tesserae, matching the Thermae Designer.
+        ctx.fillStyle="#eeeae1";
+        ctx.fillRect(c.x+2,c.y+2,c.w-4,c.h-4);
+        ctx.strokeStyle="rgba(55,52,47,.55)";
+        ctx.lineWidth=1.1;
+        const step=Math.min(c.w,c.h)/4;
+        for(let row=0; row<4; row++){
+          for(let col=0; col<4; col++){
+            const xx=c.x+2+col*step, yy=c.y+2+row*step;
+            ctx.beginPath();
+            ctx.moveTo(xx+step/2,yy+3);
+            ctx.lineTo(xx+step-3,yy+step/2);
+            ctx.lineTo(xx+step/2,yy+step-3);
+            ctx.lineTo(xx+3,yy+step/2);
+            ctx.closePath();
+            if((row+col)%2===0){
+              ctx.fillStyle="rgba(65,62,57,.72)";
+              ctx.fill();
+            }
+            ctx.stroke();
+          }
+        }
+      } else if(type==="rc"){
+        // Roman red-and-cream tesserae, matching the Thermae Designer.
+        ctx.fillStyle="#eeeae1";
+        ctx.fillRect(c.x+2,c.y+2,c.w-4,c.h-4);
+        ctx.strokeStyle="rgba(145,55,48,.58)";
+        ctx.lineWidth=1.1;
+        const step=Math.min(c.w,c.h)/4;
+        for(let row=0; row<4; row++){
+          for(let col=0; col<4; col++){
+            const xx=c.x+2+col*step, yy=c.y+2+row*step;
+            ctx.beginPath();
+            ctx.moveTo(xx+step/2,yy+3);
+            ctx.lineTo(xx+step-3,yy+step/2);
+            ctx.lineTo(xx+step/2,yy+step-3);
+            ctx.lineTo(xx+3,yy+step/2);
+            ctx.closePath();
+            if((row+col)%2===0){
+              ctx.fillStyle="rgba(155,58,50,.72)";
+              ctx.fill();
+            }
+            ctx.stroke();
+          }
+        }
+      }
+
+      // soft highlight
+      ctx.strokeStyle="rgba(255,255,255,.50)";
+      ctx.lineWidth=1.2;
+      ctx.strokeRect(c.x+5,c.y+5,c.w-10,c.h-10);
+      ctx.restore();
+    }
+
+    // Grass / greenery: a light green patch with small tufts.
+    for(const g of grasses){
+      const c = cellRect(g);
+      ctx.fillStyle = "rgba(111,174,75,.18)";
+      ctx.fillRect(c.x+3,c.y+3,c.w-6,c.h-6);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(68,128,54,.82)";
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      const cx = c.x + c.w/2, cy = c.y + c.h/2;
+      const points = [
+        [cx-14,cy+9,-7,-18], [cx-5,cy+11,-2,-21],
+        [cx+5,cy+11,5,-20], [cx+14,cy+9,10,-17],
+        [cx-20,cy-8,-8,-12], [cx+20,cy-7,9,-13]
+      ];
+      for(const [x,y,dx,dy] of points){
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.quadraticCurveTo(x+dx/2,y+dy/2,x+dx,y+dy); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Water is deliberately translucent so the original grid remains visible.
+    for(const w of waters){
+      const c = cellRect(w);
+      ctx.fillStyle = "rgba(47,143,206,.68)";
+      ctx.fillRect(c.x+2,c.y+2,c.w-4,c.h-4);
+      ctx.fillStyle = "rgba(255,255,255,.18)";
+      ctx.fillRect(c.x+5,c.y+5,c.w-10,3);
+    }
+
+    // Walls
+    ctx.lineCap = "square";
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#9b2d30";
+    for(const w of walls){
+      ctx.beginPath(); ctx.moveTo(w.x1,w.y1); ctx.lineTo(w.x2,w.y2); ctx.stroke();
+    }
+
+    // Columns
+    for(const c of columns){
+      ctx.beginPath();
+      ctx.arc(c.x,c.y,13,0,Math.PI*2);
+      ctx.fillStyle = "#eee9df";
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#34312c";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(c.x,c.y,5,0,Math.PI*2);
+      ctx.fillStyle = "#aaa399";
+      ctx.fill();
+    }
+
+
+    // Small Roman bust statues, centered within a square.
+    for(const st of statues){
+      const c = cellRect(st);
+      const cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      // pedestal
+      ctx.fillStyle="#b9afa0";
+      ctx.strokeStyle="#4d473f";
+      ctx.lineWidth=2;
+      ctx.fillRect(cx-13,cy+18,26,7);
+      ctx.strokeRect(cx-13,cy+18,26,7);
+      ctx.fillRect(cx-10,cy+10,20,8);
+      ctx.strokeRect(cx-10,cy+10,20,8);
+
+      // shoulders / bust
+      ctx.beginPath();
+      ctx.moveTo(cx-17,cy+10);
+      ctx.quadraticCurveTo(cx-14,cy-3,cx-8,cy-7);
+      ctx.lineTo(cx+8,cy-7);
+      ctx.quadraticCurveTo(cx+14,cy-3,cx+17,cy+10);
+      ctx.closePath();
+      ctx.fillStyle="#e2d8c9";
+      ctx.fill();
+      ctx.stroke();
+
+      // neck
+      ctx.fillRect(cx-5,cy-12,10,9);
+      ctx.strokeRect(cx-5,cy-12,10,9);
+
+      // head
+      ctx.beginPath();
+      ctx.ellipse(cx,cy-21,10,13,0,0,Math.PI*2);
+      ctx.fillStyle="#eee5d8";
+      ctx.fill();
+      ctx.stroke();
+
+      // stylized hair / laurel
+      ctx.beginPath();
+      ctx.arc(cx,cy-23,10,Math.PI*1.05,Math.PI*1.95);
+      ctx.strokeStyle="#6e665c";
+      ctx.lineWidth=2.5;
+      ctx.stroke();
+
+      // face details
+      ctx.strokeStyle="#8d8375";
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx-5,cy-20);ctx.lineTo(cx-2,cy-20);
+      ctx.moveTo(cx+2,cy-20);ctx.lineTo(cx+5,cy-20);
+      ctx.moveTo(cx-2,cy-14);ctx.quadraticCurveTo(cx,cy-12,cx+2,cy-14);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+
+
+    // Roman-style fountains: a circular stone basin with a central pedestal,
+    // blue water, and a small stylized water jet.
+    for(const f of fountains){
+      const c = cellRect(f);
+      const cx = c.x + c.w/2, cy = c.y + c.h/2;
+      ctx.save();
+
+      // Stone basin.
+      ctx.fillStyle = "#d8d0c2";
+      ctx.strokeStyle = "#625a4d";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy+5, c.w*.39, c.h*.30, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Water surface.
+      ctx.fillStyle = "rgba(47,143,206,.78)";
+      ctx.strokeStyle = "rgba(35,111,158,.95)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy+3, c.w*.30, c.h*.21, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Central pedestal and bowl.
+      ctx.fillStyle = "#b9afa0";
+      ctx.strokeStyle = "#625a4d";
+      ctx.lineWidth = 2;
+      ctx.fillRect(cx-7, cy-9, 14, 19);
+      ctx.strokeRect(cx-7, cy-9, 14, 19);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy-10, 13, 5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Stylized water jet.
+      ctx.strokeStyle = "rgba(47,143,206,.88)";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy-13);
+      ctx.quadraticCurveTo(cx-2, cy-25, cx-8, cy-29);
+      ctx.moveTo(cx, cy-13);
+      ctx.quadraticCurveTo(cx+2, cy-25, cx+8, cy-29);
+      ctx.stroke();
+
+      // Small highlight.
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.beginPath();
+      ctx.ellipse(cx-9, cy-1, 4, 2, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Thermopolium counter: a sturdy service counter with three dolia (large jars).
+    for(const q of counters){
+      const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.translate(cx,cy); ctx.rotate((q.dir||0)*Math.PI/2); ctx.translate(-cx,-cy);
+      // Three dolia are sunk inside the masonry counter. Their bodies are hidden
+      // below the counter surface; only the broad terracotta rims are visible.
+      const xs=[cx-18,cx,cx+18];
+      // Subtle dark openings beneath the rims suggest the jar mouths.
+      for(const x of xs){
+        ctx.fillStyle="#6f5543"; ctx.strokeStyle="#4d4035"; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.ellipse(x,c.y+c.h*.30,11,4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+      // Stone/brick counter body, drawn over the hidden jar bodies.
+      ctx.fillStyle="#9b8066"; ctx.strokeStyle="#4d4035"; ctx.lineWidth=3;
+      ctx.fillRect(c.x+5,c.y+c.h*.36,c.w-10,c.h*.49);
+      ctx.strokeRect(c.x+5,c.y+c.h*.36,c.w-10,c.h*.49);
+      // Counter top.
+      ctx.fillStyle="#c2b29e";
+      ctx.fillRect(c.x+2,c.y+c.h*.28,c.w-4,c.h*.14);
+      ctx.strokeRect(c.x+2,c.y+c.h*.28,c.w-4,c.h*.14);
+      // Only the dolia rims remain visible above the counter surface.
+      for(const x of xs){
+        ctx.fillStyle="#b8875d"; ctx.strokeStyle="#5b4434"; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.ellipse(x,c.y+c.h*.30,11,4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle="#684a38"; ctx.beginPath(); ctx.ellipse(x,c.y+c.h*.30,7,2.3,0,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle="rgba(91,68,52,.55)"; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.arc(x,c.y+c.h*.30,8.5,0,Math.PI); ctx.stroke();
+      }
+      // Small serving ledge.
+      ctx.fillStyle="#d5c6b2"; ctx.fillRect(c.x+9,c.y+c.h*.84,c.w-18,5);
+      ctx.strokeStyle="#66584a"; ctx.strokeRect(c.x+9,c.y+c.h*.84,c.w-18,5);
+      ctx.restore();
+    }
+
+    // Roman-style furnace: deliberately blocky, like a Minecraft furnace, but
+    // rendered with stone/brick colors and a glowing cooking opening.
+    for(const q of furnaces){
+      const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.fillStyle="#9a7560"; ctx.strokeStyle="#463a34"; ctx.lineWidth=3;
+      ctx.fillRect(c.x+7,c.y+8,c.w-14,c.h-16); ctx.strokeRect(c.x+7,c.y+8,c.w-14,c.h-16);
+      // Brick courses.
+      ctx.strokeStyle="rgba(75,57,48,.55)"; ctx.lineWidth=1.5;
+      for(let yy=c.y+20; yy<c.y+c.h-9; yy+=13){ctx.beginPath();ctx.moveTo(c.x+9,yy);ctx.lineTo(c.x+c.w-9,yy);ctx.stroke();}
+      ctx.beginPath(); ctx.moveTo(cx,c.y+9);ctx.lineTo(cx,c.y+20);ctx.stroke();
+      ctx.moveTo(cx-18,c.y+21);ctx.lineTo(cx-18,c.y+31);ctx.stroke();
+      ctx.moveTo(cx+18,c.y+21);ctx.lineTo(cx+18,c.y+31);ctx.stroke();
+      // Dark square opening.
+      ctx.fillStyle="#2b2522"; ctx.strokeStyle="#3f302a"; ctx.lineWidth=2;
+      ctx.fillRect(cx-19,cy-3,38,31); ctx.strokeRect(cx-19,cy-3,38,31);
+      // Fire.
+      ctx.fillStyle="#e3a12e";
+      ctx.beginPath(); ctx.moveTo(cx,cy+22); ctx.quadraticCurveTo(cx-15,cy+14,cx-8,cy+4); ctx.quadraticCurveTo(cx-3,cy+12,cx,cy-2); ctx.quadraticCurveTo(cx+6,cy+9,cx+13,cy+6); ctx.quadraticCurveTo(cx+15,cy+17,cx,cy+22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle="#d65b27"; ctx.beginPath(); ctx.moveTo(cx,cy+21);ctx.quadraticCurveTo(cx-7,cy+13,cx-2,cy+6);ctx.quadraticCurveTo(cx+2,cy+13,cx+7,cy+10);ctx.quadraticCurveTo(cx+8,cy+18,cx,cy+21);ctx.fill();
+      // Small smoke/heat marks.
+      ctx.strokeStyle="rgba(75,67,61,.55)"; ctx.lineWidth=2; ctx.beginPath();
+      ctx.moveTo(cx-8,c.y+4);ctx.quadraticCurveTo(cx-12,c.y-2,cx-7,c.y-8);
+      ctx.moveTo(cx+4,c.y+4);ctx.quadraticCurveTo(cx,c.y-2,cx+5,c.y-8); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Roman-style scroll storage cabinets: wooden cupboards with framed shelves/doors.
+    for(const q of cabinets){
+      const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.translate(cx,cy); ctx.rotate((q.dir||0)*Math.PI/2); ctx.translate(-cx,-cy);
+      // Slightly smaller cabinet, centered within its one-square footprint.
+      ctx.fillStyle="#8a633f"; ctx.strokeStyle="#4d3828"; ctx.lineWidth=3;
+      ctx.fillRect(c.x+12,c.y+10,c.w-24,c.h-20);
+      ctx.strokeRect(c.x+12,c.y+10,c.w-24,c.h-20);
+      // Top and base molding.
+      ctx.fillStyle="#a77c4d";
+      ctx.fillRect(c.x+9,c.y+7,c.w-18,6); ctx.strokeRect(c.x+9,c.y+7,c.w-18,6);
+      ctx.fillRect(c.x+9,c.y+c.h-13,c.w-18,6); ctx.strokeRect(c.x+9,c.y+c.h-13,c.w-18,6);
+      // Two cabinet doors/panels.
+      ctx.fillStyle="#b08a5f"; ctx.strokeStyle="#60452f"; ctx.lineWidth=1.5;
+      ctx.fillRect(cx-15,c.y+17,14,c.h-34); ctx.strokeRect(cx-15,c.y+17,14,c.h-34);
+      ctx.fillRect(cx+1,c.y+17,14,c.h-34); ctx.strokeRect(cx+1,c.y+17,14,c.h-34);
+      // Scroll/shelf bands to make the storage purpose visually clear.
+      ctx.strokeStyle="rgba(72,51,36,.65)"; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(c.x+17,cy-3); ctx.lineTo(c.x+c.w-17,cy-3); ctx.moveTo(c.x+17,cy+8); ctx.lineTo(c.x+c.w-17,cy+8); ctx.stroke();
+      // Handles.
+      ctx.fillStyle="#5a3e2b";
+      ctx.beginPath(); ctx.arc(cx-2.2,cy,1.8,0,Math.PI*2); ctx.arc(cx+2.2,cy,1.8,0,Math.PI*2); ctx.fill();
+      // A few visible scroll ends on the lower shelf.
+      ctx.fillStyle="#d5bd95"; ctx.strokeStyle="#6d5137"; ctx.lineWidth=1;
+      for(let i=0;i<3;i++){
+        const x=c.x+20+i*11;
+        ctx.beginPath(); ctx.arc(x,cy+12,2.8,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Roman amphorae: freestanding terracotta storage jars with narrow necks and handles.
+    for(const q of amphorae){
+      const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.strokeStyle="#5b4030"; ctx.lineWidth=2.5;
+      // Body
+      ctx.fillStyle="#b8784f";
+      ctx.beginPath();
+      ctx.moveTo(cx-7,cy-17);
+      ctx.quadraticCurveTo(cx-14,cy-8,cx-12,cy+7);
+      ctx.quadraticCurveTo(cx-10,cy+19,cx,cy+22);
+      ctx.quadraticCurveTo(cx+10,cy+19,cx+12,cy+7);
+      ctx.quadraticCurveTo(cx+14,cy-8,cx+7,cy-17);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // Neck and rim
+      ctx.fillStyle="#c5865b";
+      ctx.fillRect(cx-5,cy-25,10,9); ctx.strokeRect(cx-5,cy-25,10,9);
+      ctx.beginPath(); ctx.ellipse(cx,cy-25,7,3,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      // Handles
+      ctx.beginPath();
+      ctx.arc(cx-8,cy-10,8,Math.PI*.45,Math.PI*1.55);
+      ctx.arc(cx+8,cy-10,8,Math.PI*1.45,Math.PI*.55);
+      ctx.stroke();
+      // Decorative bands
+      ctx.strokeStyle="rgba(91,64,48,.55)"; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(cx-10,cy+1); ctx.quadraticCurveTo(cx,cy+5,cx+10,cy+1); ctx.moveTo(cx-10,cy+8); ctx.quadraticCurveTo(cx,cy+12,cx+10,cy+8); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Temple-shaped lararia (household shrines), inspired by the House of the Vettii.
+    // The reference design uses a miniature pedimented temple with columns, painted
+    // panels, a central deity niche, and small offerings.
+    for(const q of lararia){
+      const c=cellRect(q), cx=c.x+c.w/2;
+      ctx.save();
+      // Stone pedestal/base.
+      ctx.fillStyle="#d0c0a5"; ctx.strokeStyle="#5f5143"; ctx.lineWidth=2.5;
+      ctx.fillRect(c.x+5,c.y+c.h-25,c.w-10,18); ctx.strokeRect(c.x+5,c.y+c.h-25,c.w-10,18);
+      // Painted frontal panel.
+      ctx.fillStyle="#9b5141"; ctx.strokeStyle="#7b3f34"; ctx.lineWidth=1.5;
+      ctx.fillRect(c.x+11,c.y+c.h-22,c.w-22,12); ctx.strokeRect(c.x+11,c.y+c.h-22,c.w-22,12);
+      // Temple body / niche.
+      ctx.fillStyle="#eadfca"; ctx.strokeStyle="#635446"; ctx.lineWidth=2;
+      ctx.fillRect(c.x+8,c.y+20,c.w-16,c.h-44); ctx.strokeRect(c.x+8,c.y+20,c.w-16,c.h-44);
+      // Reddish painted backing in the niche.
+      ctx.fillStyle="#a45a47"; ctx.fillRect(c.x+14,c.y+25,c.w-28,c.h-52);
+      // Triangular pediment.
+      ctx.fillStyle="#d4c3a2"; ctx.strokeStyle="#5e5043"; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.moveTo(c.x+5,c.y+21); ctx.lineTo(cx,c.y+3); ctx.lineTo(c.x+c.w-5,c.y+21); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // Pediment painted motif.
+      ctx.fillStyle="#9d513f"; ctx.beginPath(); ctx.arc(cx,c.y+14,5,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#6e8b62"; ctx.lineWidth=2; ctx.beginPath();
+      ctx.arc(cx-7,c.y+15,7,-.9,.8); ctx.arc(cx+7,c.y+15,7,2.35,4.05); ctx.stroke();
+      // Two columns.
+      for(const x of [c.x+14,c.x+c.w-14]){
+        ctx.fillStyle="#b87968"; ctx.strokeStyle="#684b40"; ctx.lineWidth=1.5;
+        ctx.fillRect(x-4,c.y+25,8,c.h-51); ctx.strokeRect(x-4,c.y+25,8,c.h-51);
+        ctx.fillStyle="#d9c9ad"; ctx.fillRect(x-6,c.y+22,12,4); ctx.fillRect(x-6,c.y+c.h-28,12,4);
+      }
+      // Central niche/deity.
+      ctx.fillStyle="#efe4d0"; ctx.fillRect(cx-9,c.y+30,18,c.h-58);
+      ctx.fillStyle="#a97835"; ctx.beginPath(); ctx.arc(cx,c.y+40,4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#a97835"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx,c.y+44); ctx.lineTo(cx,c.y+57); ctx.moveTo(cx-6,c.y+49); ctx.lineTo(cx+6,c.y+49); ctx.moveTo(cx,c.y+57); ctx.lineTo(cx-5,c.y+64); ctx.moveTo(cx,c.y+57); ctx.lineTo(cx+5,c.y+64); ctx.stroke();
+      // Two tiny attendant figures.
+      for(const x of [cx-12,cx+12]){ ctx.fillStyle="#8e6938"; ctx.beginPath(); ctx.arc(x,c.y+48,2.5,0,Math.PI*2); ctx.fill(); ctx.fillRect(x-2,c.y+51,4,9); }
+      // Small offering bowls/lamp on the ledge.
+      ctx.fillStyle="#9b6546"; ctx.beginPath(); ctx.ellipse(cx-9,c.y+c.h-29,4,2.5,0,0,Math.PI*2); ctx.ellipse(cx+9,c.y+c.h-29,4,2.5,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#b77b2d"; ctx.beginPath(); ctx.arc(cx,c.y+c.h-30,2.5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Roman doors: each door spans the length of one square on the chosen wall.
+    for(const d of doors){
+      ctx.save();
+      const x1=d.axis==="h" ? d.x1 : d.x;
+      const y1=d.axis==="h" ? d.y : d.y1;
+      const x2=d.axis==="h" ? d.x2 : d.x;
+      const y2=d.axis==="h" ? d.y : d.y2;
+
+      ctx.strokeStyle="#6a4127";
+      ctx.fillStyle="#9a6841";
+      ctx.lineWidth=6;
+
+      if(d.axis==="h"){
+        ctx.fillRect(x1+4,y1-5,(x2-x1)-8,10);
+        ctx.strokeRect(x1+4,y1-5,(x2-x1)-8,10);
+        ctx.strokeStyle="#d7b07a";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(x1+14,y1-2); ctx.lineTo(x2-14,y1-2);
+        ctx.stroke();
+      } else {
+        ctx.fillRect(x1-5,y1+4,10,(y2-y1)-8);
+        ctx.strokeRect(x1-5,y1+4,10,(y2-y1)-8);
+        ctx.strokeStyle="#d7b07a";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(x1-2,y1+14); ctx.lineTo(x1-2,y2-14);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Roman triclinium lounging couches: each spans exactly two adjacent squares.
+    for(const couch of couches){
+      // R4:W4 uses local ix 0..5, so never index xLines directly here.
+      // cellRect() resolves both the normal grid and the raised top-right grid.
+      const a = cellRect(couch);
+      let x=a.x+4, y=a.y+4, w=a.w*2-8, h=a.h-8;
+      if(couch.dir==="v"){ w=a.w-8; h=a.h*2-8; }
+
+      ctx.save();
+      // Wooden base
+      ctx.fillStyle="#8a5b3d";
+      ctx.strokeStyle="#443127";
+      ctx.lineWidth=2.5;
+      roundRect(ctx,x,y,w,h,8);
+      ctx.fill(); ctx.stroke();
+
+      // Cushion
+      ctx.fillStyle="#b94e4a";
+      const inset=8;
+      roundRect(ctx,x+inset,y+inset,w-inset*2,h-inset*2,6);
+      ctx.fill(); ctx.stroke();
+
+      // Decorative legs
+
+      ctx.fillStyle="#5b3929";
+      const leg=7;
+      ctx.fillRect(x+4,y+h-leg,leg,leg);
+      ctx.fillRect(x+w-leg-4,y+h-leg,leg,leg);
+      if(couch.dir==="v"){
+        ctx.fillRect(x+w-leg,y+4,leg,leg);
+        ctx.fillRect(x+w-leg,y+h-leg-4,leg,leg);
+      }
+      ctx.restore();
+    }
+
+
+
+    // Roman-style beds: each spans exactly two adjacent squares.
+    for(const bed of beds){
+      const a = cellRect(bed);
+      let x=a.x+5, y=a.y+5, w=a.w*2-10, h=a.h-10;
+      if(bed.dir==="v"){ w=a.w-10; h=a.h*2-10; }
+
+      ctx.save();
+      // Wooden frame
+      ctx.fillStyle="#7d563a";
+      ctx.strokeStyle="#49352a";
+      ctx.lineWidth=2.5;
+      ctx.fillRect(x,y,w,h);
+      ctx.strokeRect(x,y,w,h);
+
+      // Mattress
+      const pad=9;
+      ctx.fillStyle="#e7dfd0";
+      ctx.fillRect(x+pad,y+pad,w-pad*2,h-pad*2);
+      ctx.strokeStyle="#9a8c79";
+      ctx.lineWidth=1.5;
+      ctx.strokeRect(x+pad,y+pad,w-pad*2,h-pad*2);
+
+      // Pillow / head end
+      if(bed.dir==="h"){
+        ctx.fillStyle="#d5c4ab";
+        ctx.fillRect(x+pad+5,y+pad+4,w-pad*2-10,Math.min(18,h*.22));
+      } else {
+        ctx.fillStyle="#d5c4ab";
+        ctx.fillRect(x+pad+4,y+pad+5,Math.min(18,w*.22),h-pad*2-10);
+      }
+
+      // Light blanket stripe
+      ctx.fillStyle="rgba(150,125,92,.20)";
+      if(bed.dir==="h"){
+        ctx.fillRect(x+pad,y+h*.48,w-pad*2,h*.16);
+      } else {
+        ctx.fillRect(x+w*.48,y+pad,w*.16,h-pad*2);
+      }
+
+      // Four short legs
+      ctx.fillStyle="#5c3e2c";
+      const leg=6;
+      ctx.fillRect(x+4,y+4,leg,leg);
+      ctx.fillRect(x+w-leg-4,y+4,leg,leg);
+      ctx.fillRect(x+4,y+h-leg-4,leg,leg);
+      ctx.fillRect(x+w-leg-4,y+h-leg-4,leg,leg);
+      ctx.restore();
+    }
+
+    // Simple wooden chairs: one square each, with a seat, four legs, and a backrest.
+    for(const chair of chairs){
+      const c = cellRect(chair);
+      const cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate((chair.dir||0)*Math.PI/2);
+      const w=Math.min(c.w*.56,40), h=Math.min(c.h*.56,40);
+
+      // Four wooden legs.
+      ctx.fillStyle="#5b3b27";
+      ctx.strokeStyle="#3f2a1d";
+      ctx.lineWidth=1.5;
+      const leg=4;
+      [[-w/2+3,-h/2+3],[w/2-7,-h/2+3],[-w/2+3,h/2-7],[w/2-7,h/2-7]].forEach(([x,y])=>{
+        ctx.fillRect(x,y,leg,leg);
+        ctx.strokeRect(x,y,leg,leg);
+      });
+
+      // Wooden seat.
+      ctx.fillStyle="#9a704d";
+      ctx.strokeStyle="#49352a";
+      ctx.lineWidth=2;
+      roundRect(ctx,-w/2,-h/2+1,w,h*.62,3);
+      ctx.fill();
+      ctx.stroke();
+
+      // Simple wooden backrest.
+      ctx.fillStyle="#765238";
+      roundRect(ctx,-w/2,-h/2-2,w,8,2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Two subtle vertical back slats.
+      ctx.fillStyle="#9a704d";
+      ctx.fillRect(-w*.22,-h/2,w*.09,9);
+      ctx.fillRect(w*.13,-h/2,w*.09,9);
+      ctx.restore();
+    }
+
+    // Simple square Roman dining tables. Adjacent table squares visually
+    // connect into a larger continuous tabletop.
+    const tableSet = new Set(tables.map(t => cellKey(t)));
+    for(const t of tables){
+      const c = cellRect(t);
+      const margin=Math.min(c.w,c.h)*0.10;
+      const x=c.x+margin, y=c.y+margin, w=c.w-margin*2, h=c.h-margin*2;
+
+      // Tables use the normal 20x20 cell coordinates.
+      // Older versions had a special "top-right" cell mode; that mode is no
+      // longer used on this grid, so table rendering must only use ix/iy.
+      const left = tableSet.has(`${t.ix-1},${t.iy}`);
+      const right = tableSet.has(`${t.ix+1},${t.iy}`);
+      const up = tableSet.has(`${t.ix},${t.iy-1}`);
+      const down = tableSet.has(`${t.ix},${t.iy+1}`);
+
+      const x0 = left ? c.x : x;
+      const y0 = up ? c.y : y;
+      const x1 = right ? c.x+c.w : c.x+c.w-margin;
+      const y1 = down ? c.y+c.h : c.y+c.h-margin;
+
+      ctx.save();
+      ctx.fillStyle="#d2c2ad";
+      ctx.strokeStyle="#594b3e";
+      ctx.lineWidth=2.5;
+
+      ctx.fillRect(x0,y0,x1-x0,y1-y0);
+
+      // Only draw outer edges where this table does not touch another table.
+      ctx.beginPath();
+      if(!up){ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);}
+      if(!right){ctx.moveTo(x1,y0);ctx.lineTo(x1,y1);}
+      if(!down){ctx.moveTo(x1,y1);ctx.lineTo(x0,y1);}
+      if(!left){ctx.moveTo(x0,y1);ctx.lineTo(x0,y0);}
+      ctx.stroke();
+
+      // Subtle inset highlight on the outer perimeter.
+      ctx.strokeStyle="rgba(255,255,255,.60)";
+      ctx.lineWidth=1.2;
+      ctx.beginPath();
+      if(!up){ctx.moveTo(x0+4,y0+4);ctx.lineTo(x1-4,y0+4);}
+      if(!right){ctx.moveTo(x1-4,y0+4);ctx.lineTo(x1-4,y1-4);}
+      if(!down){ctx.moveTo(x1-4,y1-4);ctx.lineTo(x0+4,y1-4);}
+      if(!left){ctx.moveTo(x0+4,y1-4);ctx.lineTo(x0+4,y0+4);}
+      ctx.stroke();
+
+      // Keep a small decorative square in each cell so students can still see
+      // the individual grid placement.
+      const d=Math.min(c.w,c.h)*0.16;
+      ctx.fillStyle="rgba(140,112,80,.28)";
+      ctx.fillRect(c.x+c.w/2-d/2,c.y+c.h/2-d/2,d,d);
+      ctx.restore();
+    }
+
+    // Labels
+    for(const l of labels) drawLabel(l);
+
+    // Wall preview
+    if(preview && !preview.couch && !preview.bed){
+      ctx.save();
+      ctx.setLineDash([12,8]);
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "rgba(155,45,48,.72)";
+      ctx.beginPath();ctx.moveTo(preview.x1,preview.y1);ctx.lineTo(preview.x2,preview.y2);ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawLabel(l, active=false) {
+    ctx.save();
+    ctx.font = "700 22px system-ui, sans-serif";
+    const padX=10, padY=7;
+    const tw=ctx.measureText(l.text).width;
+    const bw=tw+padX*2, bh=34+padY/2;
+    ctx.translate(l.x,l.y);
+    ctx.fillStyle = active ? "#fff1bd" : "#fffdf6";
+    ctx.strokeStyle = active ? "#9b2d30" : "#403c35";
+    ctx.lineWidth = 2;
+    roundRect(ctx,-bw/2,-bh/2,bw,bh,7);
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle="#24211d";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(l.text,0,1);
+    ctx.restore();
+  }
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);
+    c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();
+  }
+
+
+
+  function doorHit(p){
+    for(let i=doors.length-1;i>=0;i--){
+      const d=doors[i];
+      if(d.axis==="h" && Math.abs(p.y-d.y)<14 && p.x>=Math.min(d.x1,d.x2)-8 && p.x<=Math.max(d.x1,d.x2)+8) return i;
+      if(d.axis==="v" && Math.abs(p.x-d.x)<14 && p.y>=Math.min(d.y1,d.y2)-8 && p.y<=Math.max(d.y1,d.y2)+8) return i;
+    }
+    return -1;
+  }
+
+  function validTwoCellPlacement(o){
+    const cells = o.dir === "h"
+      ? [{ix:o.ix,iy:o.iy},{ix:o.ix+1,iy:o.iy}]
+      : [{ix:o.ix,iy:o.iy},{ix:o.ix,iy:o.iy+1}];
+    // A two-square object must occupy two actual floor squares in the
+    // spreadsheet footprint (not merely the 20x20 bounding box).
+    return cells.every(q => isEditableMain(q.ix,q.iy));
+  }
+
+  function couchCells(couch){
+    return couch.dir==="h"
+      ? [{ix:couch.ix,iy:couch.iy},{ix:couch.ix+1,iy:couch.iy}]
+      : [{ix:couch.ix,iy:couch.iy},{ix:couch.ix,iy:couch.iy+1}];
+  }
+
+  function bedCells(bed){
+    return bed.dir==="h"
+      ? [{ix:bed.ix,iy:bed.iy},{ix:bed.ix+1,iy:bed.iy}]
+      : [{ix:bed.ix,iy:bed.iy},{ix:bed.ix,iy:bed.iy+1}];
+  }
+  function bedHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return beds.findIndex(b => bedCells(b).some(q=>sameCell(q,c)));
+  }
+
+  function chairHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return chairs.findIndex(ch=>sameCell(ch,c));
+  }
+
+  function tableHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return tables.findIndex(t=>sameCell(t,c));
+  }
+
+  function couchHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return couches.findIndex(co => couchCells(co).some(q=>sameCell(q,c)));
+  }
+  function clearDecorAt(cells){
+    for(const q of cells){
+      waters = waters.filter(w=>!sameCell(w,q));
+      grasses = grasses.filter(g=>!sameCell(g,q));
+      marbles = marbles.filter(m=>!sameCell(m,q));
+      tables = tables.filter(t=>!sameCell(t,q));
+      statues = statues.filter(st=>!sameCell(st,q));
+      fountains = fountains.filter(f=>!sameCell(f,q));
+      chairs = chairs.filter(ch=>!sameCell(ch,q));
+      counters = counters.filter(x=>!sameCell(x,q));
+      furnaces = furnaces.filter(x=>!sameCell(x,q));
+      cabinets = cabinets.filter(x=>!sameCell(x,q));
+      amphorae = amphorae.filter(x=>!sameCell(x,q));
+    }
+  }
+
+  function labelHit(p){
+    for(let i=labels.length-1;i>=0;i--){
+      const l=labels[i];
+      ctx.font="700 22px system-ui, sans-serif";
+      const bw=ctx.measureText(l.text).width+20, bh=38;
+      if(Math.abs(p.x-l.x)<=bw/2 && Math.abs(p.y-l.y)<=bh/2) return i;
+    }
+    return -1;
+  }
+  function wallHit(p){
+    let best=-1, bd=14;
+    for(let i=0;i<walls.length;i++){
+      const w=walls[i];
+      const dx=w.x2-w.x1, dy=w.y2-w.y1;
+      const len=Math.hypot(dx,dy)||1;
+      const t=Math.max(0,Math.min(1,((p.x-w.x1)*dx+(p.y-w.y1)*dy)/(len*len)));
+      const qx=w.x1+t*dx,qy=w.y1+t*dy;
+      const d=Math.hypot(p.x-qx,p.y-qy);
+      if(d<bd){bd=d;best=i;}
+    }
+    return best;
+  }
+
+  // Remove only the grid-sized section of a wall that the user clicks.
+  // A longer wall is split into the portions on either side of that section.
+  function eraseWallSection(p){
+    const i=wallHit(p);
+    if(i<0) return false;
+    const w=walls[i];
+    const horizontal=Math.abs(w.x2-w.x1)>=Math.abs(w.y2-w.y1);
+    const coords=(horizontal ? xLines : yLines)
+      .concat(horizontal ? heavyX : heavyY)
+      .filter(v=>Number.isFinite(v))
+      .sort((a,b)=>a-b)
+      .filter((v,n,a)=>n===0 || Math.abs(v-a[n-1])>0.5);
+    const a=horizontal ? Math.min(w.x1,w.x2) : Math.min(w.y1,w.y2);
+    const b=horizontal ? Math.max(w.x1,w.x2) : Math.max(w.y1,w.y2);
+    const at=horizontal ? p.x : p.y;
+    const bounds=coords.filter(v=>v>=a-1 && v<=b+1);
+    if(bounds.length<2) return false;
+
+    let left=bounds[0], right=bounds[1];
+    for(let k=0;k<bounds.length-1;k++){
+      if(at>=bounds[k]-1 && at<=bounds[k+1]+1){
+        left=bounds[k]; right=bounds[k+1]; break;
+      }
+    }
+    // Keep the deletion strictly inside the wall's actual endpoints.
+    left=Math.max(left,a); right=Math.min(right,b);
+    if(right-left<2) return false;
+
+    const replacement=[];
+    if(a < left-1){
+      replacement.push(horizontal
+        ? {x1:a,y1:w.y1,x2:left,y2:w.y1}
+        : {x1:w.x1,y1:a,x2:w.x1,y2:left});
+    }
+    if(right < b-1){
+      replacement.push(horizontal
+        ? {x1:right,y1:w.y1,x2:b,y2:w.y1}
+        : {x1:w.x1,y1:right,x2:w.x1,y2:b});
+    }
+    walls.splice(i,1,...replacement);
+    return true;
+  }
+  function columnHit(p){
+    for(let i=columns.length-1;i>=0;i--) if(Math.hypot(p.x-columns[i].x,p.y-columns[i].y)<20) return i;
+    return -1;
+  }
+  function waterHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return waters.findIndex(w=>sameCell(w,c));
+  }
+
+  function eraseAtPoint(p){
+    let i=labelHit(p);
+    if(i>=0){ labels.splice(i,1); return "label:"+i; }
+    i=wallHit(p);
+    if(i>=0){
+      const w=walls[i];
+      const horizontal=Math.abs(w.x2-w.x1)>=Math.abs(w.y2-w.y1);
+      const coords=(horizontal ? xLines : yLines).concat(horizontal ? heavyX : heavyY)
+        .filter(v=>Number.isFinite(v)).sort((a,b)=>a-b)
+        .filter((v,n,a)=>n===0 || Math.abs(v-a[n-1])>0.5);
+      const a=horizontal?Math.min(w.x1,w.x2):Math.min(w.y1,w.y2);
+      const b=horizontal?Math.max(w.x1,w.x2):Math.max(w.y1,w.y2);
+      const at=horizontal?p.x:p.y;
+      const bounds=coords.filter(v=>v>=a-1 && v<=b+1);
+      if(bounds.length<2) return null;
+      let left=bounds[0],right=bounds[1];
+      for(let k=0;k<bounds.length-1;k++) if(at>=bounds[k]-1 && at<=bounds[k+1]+1){left=bounds[k];right=bounds[k+1];break;}
+      left=Math.max(left,a); right=Math.min(right,b);
+      if(right-left<2) return null;
+      const key=`wall:${horizontal?'h':'v'}:${left}:${right}:${horizontal?w.y1:w.x1}`;
+      if(key===eraseLastKey) return null;
+      const replacement=[];
+      if(a<left-1) replacement.push(horizontal?{x1:a,y1:w.y1,x2:left,y2:w.y1}:{x1:w.x1,y1:a,x2:w.x1,y2:left});
+      if(right<b-1) replacement.push(horizontal?{x1:right,y1:w.y1,x2:b,y2:w.y1}:{x1:w.x1,y1:right,x2:w.x1,y2:b});
+      walls.splice(i,1,...replacement);
+      return key;
+    }
+    i=columnHit(p); if(i>=0){columns.splice(i,1);return `column:${i}`;}
+    i=chairHit(p); if(i>=0){chairs.splice(i,1);return `chair:${i}`;}
+    i=bedHit(p); if(i>=0){beds.splice(i,1);return `bed:${i}`;}
+    i=tableHit(p); if(i>=0){tables.splice(i,1);return `table:${i}`;}
+    i=doorHit(p); if(i>=0){doors.splice(i,1);return `door:${i}`;}
+    i=couchHit(p); if(i>=0){couches.splice(i,1);return `couch:${i}`;}
+    i=marbles.findIndex(m=>{const c=cellRect(m);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){marbles.splice(i,1);return `marble:${i}`;}
+    i=waterHit(p); if(i>=0){waters.splice(i,1);return `water:${i}`;}
+    i=fountains.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){fountains.splice(i,1);return `fountain:${i}`;}
+    i=counters.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){counters.splice(i,1);return `counter:${i}`;}
+    i=furnaces.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){furnaces.splice(i,1);return `furnace:${i}`;}
+    i=cabinets.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){cabinets.splice(i,1);return `cabinet:${i}`;}
+    i=amphorae.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){amphorae.splice(i,1);return `amphora:${i}`;}
+    i=lararia.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){lararia.splice(i,1);return `lararium:${i}`;}
+    i=statues.findIndex(st=>{const c=cellRect(st);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){statues.splice(i,1);return `statue:${i}`;}
+    i=grasses.findIndex(g=>{const c=cellRect(g);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){grasses.splice(i,1);return `grass:${i}`;}
+    return null;
+  }
+  function eraseDragAt(p){
+    const key=eraseAtPoint(p);
+    if(!key) return false;
+    eraseLastKey=key;
+    if(!eraseChanged){
+      history.push(eraseHistorySnapshot);
+      if(history.length>60) history.shift();
+      redoHistory=[];
+      eraseChanged=true;
+    }
+    return true;
+  }
+
+  
+  function paintTileCell(c) {
+    if(!c) return;
+    const key = c.ix + ":" + c.iy;
+    if(tileLastCell === key) return;
+    tileLastCell = key;
+
+    waters=waters.filter(x=>!sameCell(x,c));
+    grasses=grasses.filter(x=>!sameCell(x,c));
+    marbles=marbles.filter(x=>!sameCell(x,c));
+
+    const base = {ix:c.ix,iy:c.iy,topRight:false};
+    if(tool==="water") waters.push({...base});
+    else if(tool==="grass") grasses.push({...base});
+    else if(tool==="marble") marbles.push({...base,type:selectedMarbleType});
+  }
+
+canvas.addEventListener("pointerdown", e => {
+    const p=pos(e);
+    if(tool==="water" || tool==="grass" || tool==="marble"){
+      tileDragging=true;
+      tileLastCell=null;
+      tileUndoSaved=false;
+      if(canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+      pushHistory();
+      tileUndoSaved=true;
+      paintTileCell(cellAt(p));
+      draw();
+      return;
+    }
+
+    canvas.setPointerCapture(e.pointerId);
+
+    if(tool==="wall"){
+      const snapped=nearestLinePoint(p);
+      if(!isValidGridPoint(snapped)){
+        status.innerHTML="<b>Wall must start on the spreadsheet layout.</b>";
+        return;
+      }
+      drawing=true;
+      start=snapped;
+      preview={x1:start.x,y1:start.y,x2:start.x,y2:start.y};
+    } else if(tool==="column"){
+      const q=nearestLinePoint(p);
+      pushHistory();
+      if(!columns.some(c=>Math.hypot(c.x-q.x,c.y-q.y)<4)) columns.push(q);
+      draw();
+      status.innerHTML="<b>Column added.</b> Add more around your peristylum or other spaces.";
+    } else if(tool==="water"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=waterHit(p);
+        if(i>=0) waters.splice(i,1); else waters.push({ix:c.ix,iy:c.iy,topRight:false});
+        draw();
+        status.innerHTML="<b>Water updated.</b> Click another square to continue.";
+      }
+
+    } else if(tool==="grass"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=grasses.findIndex(g=>sameCell(g,c));
+        const wi=waters.findIndex(w=>sameCell(w,c));
+        if(i>=0) grasses.splice(i,1);
+        else {
+          // A square can be either water or grass.
+          if(wi>=0) waters.splice(wi,1);
+          grasses.push({ix:c.ix,iy:c.iy,topRight:false});
+        }
+        draw();
+        status.innerHTML="<b>Grass updated.</b> Click another square to continue.";
+      }
+
+    } else if(tool==="statue"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=statues.findIndex(st=>sameCell(st,c));
+        if(i>=0) statues.splice(i,1);
+        else {
+          // Statues sit above the floor tile beneath them. Keep any water,
+          // grass, or marble in the square and render the statue on top.
+          statues.push({ix:c.ix,iy:c.iy,topRight:false});
+        }
+        draw();
+        status.innerHTML="<b>Statue updated.</b> Click another square to continue.";
+      }
+
+
+    } else if(tool==="fountain"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=fountains.findIndex(f=>sameCell(f,c));
+        if(i>=0){
+          fountains.splice(i,1);
+          status.innerHTML="<b>Fountain removed.</b> Click another square to place one.";
+        } else {
+          // A fountain occupies one square and sits above the floor beneath it.
+          // It can be placed over water/marble/grass, but replaces other
+          // single-square decorative objects for a clean placement.
+          fountains.push({ix:c.ix,iy:c.iy,topRight:false});
+          statues=statues.filter(st=>!sameCell(st,c));
+          chairs=chairs.filter(ch=>!sameCell(ch,c));
+          tables=tables.filter(t=>!sameCell(t,c));
+          status.innerHTML="<b>Roman fountain added.</b> It fits in one grid square.";
+        }
+        draw();
+      }
+
+    } else if(tool==="counter"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=counters.findIndex(q=>sameCell(q,c));
+        if(i>=0){
+          counters[i].dir=((counters[i].dir||0)+1)%4;
+          status.innerHTML="<b>Thermopolium counter rotated.</b> Click it again to rotate 90° more.";
+        }
+        else {
+          counters.push({ix:c.ix,iy:c.iy,dir:0,topRight:false});
+          // Keep the floor tile visible underneath; remove conflicting single-square objects.
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          furnaces=furnaces.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Thermopolium counter added.</b> It includes three dolia storage jars.";
+        }
+        draw();
+      }
+    } else if(tool==="furnace"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=furnaces.findIndex(q=>sameCell(q,c));
+        if(i>=0){ furnaces.splice(i,1); status.innerHTML="<b>Furnace removed.</b>"; }
+        else {
+          furnaces.push({ix:c.ix,iy:c.iy,topRight:false});
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          counters=counters.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Furnace added.</b> Place it near the thermopolium counter.";
+        }
+        draw();
+      }
+    } else if(tool==="cabinet"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=cabinets.findIndex(q=>sameCell(q,c));
+        if(i>=0){
+          cabinets[i].dir=((cabinets[i].dir||0)+1)%4;
+          status.innerHTML="<b>Scroll cabinet rotated.</b> Click it again to rotate 90° more.";
+        }
+        else {
+          cabinets.push({ix:c.ix,iy:c.iy,dir:0,topRight:false});
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          counters=counters.filter(q=>!sameCell(q,c));
+          furnaces=furnaces.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Scroll storage cabinet added.</b> It can represent storage for Roman scrolls.";
+        }
+        draw();
+      }
+    } else if(tool==="amphora"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=amphorae.findIndex(q=>sameCell(q,c));
+        if(i>=0){
+          amphorae.splice(i,1);
+          status.innerHTML="<b>Amphora removed.</b>";
+        } else {
+          amphorae.push({ix:c.ix,iy:c.iy,topRight:false});
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          counters=counters.filter(q=>!sameCell(q,c));
+          furnaces=furnaces.filter(q=>!sameCell(q,c));
+          cabinets=cabinets.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Amphora added.</b> It can represent a Roman storage or transport jar.";
+        }
+        draw();
+      }
+    } else if(tool==="lararium"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=lararia.findIndex(q=>sameCell(q,c));
+        if(i>=0){
+          lararia.splice(i,1);
+          status.innerHTML="<b>Lararium removed.</b>";
+        } else {
+          lararia.push({ix:c.ix,iy:c.iy,topRight:false});
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          counters=counters.filter(q=>!sameCell(q,c));
+          furnaces=furnaces.filter(q=>!sameCell(q,c));
+          cabinets=cabinets.filter(q=>!sameCell(q,c));
+          amphorae=amphorae.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Lararium added.</b> This temple-shaped shrine is inspired by the House of the Vettii.";
+        }
+        draw();
+      }
+    } else if(tool==="chair"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=chairHit(p);
+        if(i>=0){
+          chairs[i].dir=((chairs[i].dir||0)+1)%4;
+          status.innerHTML="<b>Chair rotated.</b> Click it again to rotate 90° more.";
+        } else {
+          waters=waters.filter(w=>!sameCell(w,c));
+          grasses=grasses.filter(g=>!sameCell(g,c));
+          marbles=marbles.filter(m=>!sameCell(m,c));
+          statues=statues.filter(st=>!sameCell(st,c));
+          tables=tables.filter(t=>!sameCell(t,c));
+          chairs.push({ix:c.ix,iy:c.iy,dir:0,topRight:false});
+          status.innerHTML="<b>Chair added.</b> Click the chair again to rotate it.";
+        }
+        draw();
+      }
+
+    } else if(tool==="door"){
+      // A door always spans exactly one square along a horizontal or vertical line.
+      const xv=nearest(p.x,heavyX), yv=nearest(p.y,heavyY);
+      const dx=Math.abs(p.x-xv), dy=Math.abs(p.y-yv);
+      let d;
+      if(dx < dy){
+        // Vertical door: choose the nearest grid cell on the vertical line.
+        const yi=nearestIndex(p.y,heavyY);
+        const yA=heavyY[Math.max(0,Math.min(heavyY.length-2,yi))];
+        const yB=heavyY[Math.max(1,Math.min(heavyY.length-1,yi+1))];
+        d={axis:"v",x:xv,y1:yA,y2:yB};
+      } else {
+        // Horizontal door: choose the nearest grid cell on the horizontal line.
+        const xi=nearestIndex(p.x,heavyX);
+        const xA=heavyX[Math.max(0,Math.min(heavyX.length-2,xi))];
+        const xB=heavyX[Math.max(1,Math.min(heavyX.length-1,xi+1))];
+        d={axis:"h",y:yv,x1:xA,x2:xB};
+      }
+      // A one-square door must lie along a grid segment belonging to the
+      // spreadsheet footprint.
+      const xi=nearestIndex(d.axis==="h" ? (d.x1+d.x2)/2 : d.x, xLines);
+      const yi=nearestIndex(d.axis==="h" ? d.y : (d.y1+d.y2)/2, yLines);
+      let doorValid=false;
+      if(d.axis==="h"){
+        doorValid = isEditableMain(xi,yi) || isEditableMain(xi,yi-1);
+      } else {
+        doorValid = isEditableMain(xi,yi) || isEditableMain(xi-1,yi);
+      }
+      if(!doorValid){
+        status.innerHTML="<b>Door must be placed on the spreadsheet layout.</b>";
+        return;
+      }
+      pushHistory();
+      const existing=doors.findIndex(o=>{
+        if(o.axis!==d.axis) return false;
+        if(o.axis==="h") return o.y===d.y && Math.abs(o.x1-d.x1)<3 && Math.abs(o.x2-d.x2)<3;
+        return o.x===d.x && Math.abs(o.y1-d.y1)<3 && Math.abs(o.y2-d.y2)<3;
+      });
+      if(existing>=0) doors.splice(existing,1);
+      else doors.push(d);
+      draw();
+      status.innerHTML="<b>Door updated.</b> Each door spans one square.";
+    } else if(tool==="couch"){
+      const c=cellAt(p);
+      if(c){
+        drawing=true;
+        start={ix:c.ix,iy:c.iy,topRight:false};
+        preview={couch:true,ix:c.ix,iy:c.iy,dir:"h",topRight:false};
+      }
+
+    } else if(tool==="marble"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=marbles.findIndex(m=>sameCell(m,c));
+        if(i>=0) marbles.splice(i,1);
+        else {
+          // A square can have one floor treatment at a time.
+          waters = waters.filter(w=>!sameCell(w,c));
+          grasses = grasses.filter(g=>!sameCell(g,c));
+          marbles.push({ix:c.ix,iy:c.iy,topRight:false,type:selectedMarbleType});
+        }
+        draw();
+        status.innerHTML="<b>Marble updated.</b> Click another square to continue.";
+      }
+
+
+    } else if(tool==="bed"){
+      const c=cellAt(p);
+      if(c){
+        drawing=true;
+        start={ix:c.ix,iy:c.iy,topRight:false};
+        preview={bed:true,ix:c.ix,iy:c.iy,dir:"h",topRight:false};
+      }
+    } else if(tool==="table"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=tables.findIndex(t=>sameCell(t,c));
+        if(i>=0) tables.splice(i,1);
+        else {
+          // A square may contain one table; clear floor decoration beneath it
+          // only when needed for visual clarity, while keeping marble usable.
+          tables.push({ix:c.ix,iy:c.iy,topRight:false});
+        }
+        draw();
+        status.innerHTML="<b>Table updated.</b> Place it between lounging couches in the trīclīnium.";
+      }
+    } else if(tool==="select"){
+      const i=labelHit(p);
+      if(i>=0){
+        hideLabelTooltip();
+        dragLabel=i;
+        dragOffset={x:p.x-labels[i].x,y:p.y-labels[i].y};
+        pushHistory();
+      }
+    } else if(tool==="water" || tool==="grass" || tool==="marble"){
+      tileDragging=true;
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        if(tool==="water"){
+          const exists=waters.some(w=>sameCell(w,c));
+          if(!exists){
+            waters=waters.filter(w=>!sameCell(w,c));
+            grasses=grasses.filter(g=>!sameCell(g,c));
+            marbles=marbles.filter(m=>!sameCell(m,c));
+            waters.push({ix:c.ix,iy:c.iy,topRight:false});
+          }
+        } else if(tool==="grass"){
+          const exists=grasses.some(g=>sameCell(g,c));
+          if(!exists){
+            waters=waters.filter(w=>!sameCell(w,c));
+            grasses=grasses.filter(g=>!sameCell(g,c));
+            marbles=marbles.filter(m=>!sameCell(m,c));
+            grasses.push({ix:c.ix,iy:c.iy,topRight:false});
+          }
+        } else {
+          const exists=marbles.some(m=>sameCell(m,c));
+          if(!exists){
+            waters=waters.filter(w=>!sameCell(w,c));
+            grasses=grasses.filter(g=>!sameCell(g,c));
+            marbles=marbles.filter(m=>!sameCell(m,c));
+            marbles.push({ix:c.ix,iy:c.iy,topRight:false,type:selectedMarbleType});
+          }
+        }
+        draw();
+      }
+      return;
+    }
+    if(tool==="erase"){
+      eraseDragging=true;
+      eraseHistorySnapshot=snapshot();
+      eraseChanged=false;
+      eraseLastKey="";
+      eraseDragAt(p);
+      draw();
+      status.innerHTML="<b>Erase active.</b> Drag across grid sections to remove them.";
+    }
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    const hoverPoint = pos(e);
+    const hovered = labelHit(hoverPoint);
+    // Do not show room descriptions while a placed label is being dragged.
+    if(dragLabel!==null){
+      hideLabelTooltip();
+    } else if(hovered >= 0){
+      if(hoverLabelIndex !== hovered){
+        hoverLabelIndex = hovered;
+        scheduleLabelTooltip(labels[hovered].text, e.clientX, e.clientY);
+      }
+    } else {
+      hideLabelTooltip();
+    }
+    if(tileDragging){
+      paintTileCell(cellAt(pos(e)));
+      draw();
+      return;
+    }
+    const p=pos(e);
+    if(tool==="erase" && eraseDragging){
+      eraseDragAt(p);
+      draw();
+      return;
+    } else if(tool==="wall" && drawing){
+      const q=nearestLinePoint(p);
+      const dx=Math.abs(q.x-start.x), dy=Math.abs(q.y-start.y);
+      if(dx>=dy) preview={x1:start.x,y1:start.y,x2:q.x,y2:start.y};
+      else preview={x1:start.x,y1:start.y,x2:start.x,y2:q.y};
+      draw();
+    } else if(tool==="couch" && drawing && start){
+      const c=cellAt(p);
+      if(c){
+        const dx=c.ix-start.ix, dy=c.iy-start.iy;
+        if(Math.abs(dx)>=Math.abs(dy)){
+          const ix=dx<0 ? Math.max(0,start.ix-1) : start.ix;
+          preview={couch:true,ix,iy:start.iy,dir:"h",topRight:false};
+        } else {
+          const iy=dy<0 ? Math.max(0,start.iy-1) : start.iy;
+          preview={couch:true,ix:start.ix,iy,dir:"v",topRight:false};
+        }
+      }
+      // simple visual preview
+      draw();
+      if(preview && preview.couch){
+        const a=cellRect(preview);
+        ctx.save();
+        ctx.globalAlpha=.5;
+        ctx.fillStyle="#b94e4a";
+        if(preview.dir==="h") ctx.fillRect(a.x+4,a.y+4,a.w*2-8,a.h-8);
+        else ctx.fillRect(a.x+4,a.y+4,a.w-8,a.h*2-8);
+        ctx.restore();
+      }
+
+    } else if(tool==="bed" && drawing && start){
+      const c=cellAt(p);
+      if(c){
+        const dx=c.ix-start.ix, dy=c.iy-start.iy;
+        if(Math.abs(dx)>=Math.abs(dy)){
+          const ix=dx<0 ? Math.max(0,start.ix-1) : start.ix;
+          preview={bed:true,ix,iy:start.iy,dir:"h",topRight:false};
+        } else {
+          const iy=dy<0 ? Math.max(0,start.iy-1) : start.iy;
+          preview={bed:true,ix:start.ix,iy,dir:"v",topRight:false};
+        }
+      }
+      draw();
+      if(preview && preview.bed){
+        const a=cellRect(preview);
+        ctx.save();
+        ctx.globalAlpha=.45;
+        ctx.fillStyle="#e7dfd0";
+        if(preview.dir==="h") ctx.fillRect(a.x+5,a.y+5,a.w*2-10,a.h-10);
+        else ctx.fillRect(a.x+5,a.y+5,a.w-10,a.h*2-10);
+        ctx.restore();
+      }
+    } else if(tool==="select" && dragLabel!==null){
+      labels[dragLabel].x=p.x-dragOffset.x;
+      labels[dragLabel].y=p.y-dragOffset.y;
+      // Tooltip intentionally remains hidden while the label is being moved.
+      hideLabelTooltip();
+      draw();
+    }
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    if(dragLabel===null) hideLabelTooltip();
+  });
+
+  canvas.addEventListener("pointerup", e => {
+    const p=pos(e);
+    if(tileDragging){
+      tileDragging=false;
+      tileLastCell=null;
+      if(canvas.releasePointerCapture) {
+        try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+      }
+      status.innerHTML="<b>Tile placement complete.</b>";
+      draw();
+      return;
+    }
+
+    if(tool==="erase" && eraseDragging){
+      eraseDragging=false;
+      eraseHistorySnapshot=null;
+      eraseLastKey="";
+      status.innerHTML="<b>Erase complete.</b> Drag across grid sections to remove them.";
+      draw();
+      return;
+    }
+
+    if(tool==="wall" && drawing){
+      const q=nearestLinePoint(p);
+      const dx=Math.abs(q.x-start.x), dy=Math.abs(q.y-start.y);
+      let end;
+      if(dx>=dy) end={x:q.x,y:start.y};
+      else end={x:start.x,y:q.y};
+      if(Math.hypot(end.x-start.x,end.y-start.y)>18 && isValidGridPoint(end)){
+        pushHistory();
+        walls.push({x1:start.x,y1:start.y,x2:end.x,y2:end.y});
+        status.innerHTML="<b>Wall added.</b> Walls snap to the spreadsheet grid and thick boundary lines.";
+      } else if(Math.hypot(end.x-start.x,end.y-start.y)>18){
+        status.innerHTML="<b>Wall must end on the spreadsheet layout.</b>";
+      }
+      drawing=false;start=null;preview=null;draw();
+    }
+
+    if(tool==="couch" && drawing && start){
+      if(preview && preview.couch){
+        const valid = validTwoCellPlacement(preview);
+        if(valid){
+          pushHistory();
+          const existing=couches.findIndex(co=>sameCell(co,preview)&&co.dir===preview.dir);
+          if(existing>=0) couches.splice(existing,1);
+          else {
+            const co={ix:preview.ix,iy:preview.iy,dir:preview.dir};
+            clearDecorAt(couchCells(co));
+            couches.push(co);
+          }
+          status.innerHTML="<b>Triclinium couch added.</b> It spans two adjacent squares.";
+        }
+      }
+      drawing=false;start=null;preview=null;draw();
+    }
+
+
+    if(tool==="bed" && drawing && start){
+      if(preview && preview.bed){
+        const valid = validTwoCellPlacement(preview);
+        if(valid){
+          pushHistory();
+          const existing=beds.findIndex(b=>sameCell(b,preview)&&b.dir===preview.dir);
+          if(existing>=0) beds.splice(existing,1);
+          else {
+            const bed={ix:preview.ix,iy:preview.iy,dir:preview.dir};
+            // Clear floor/object treatments under the bed for a clean furniture placement.
+            for(const q of bedCells(bed)){
+              waters=waters.filter(w=>!(w.ix===q.ix&&w.iy===q.iy));
+              grasses=grasses.filter(g=>!(g.ix===q.ix&&g.iy===q.iy));
+              marbles=marbles.filter(m=>!(m.ix===q.ix&&m.iy===q.iy));
+              statues=statues.filter(st=>!(st.ix===q.ix&&st.iy===q.iy));
+              tables=tables.filter(t=>!(t.ix===q.ix&&t.iy===q.iy));
+            }
+            beds.push(bed);
+          }
+          status.innerHTML="<b>Roman bed added.</b> It spans two adjacent squares.";
+        }
+      }
+      drawing=false;start=null;preview=null;draw();
+    }
+
+    if(tool==="select" && dragLabel!==null){
+      dragLabel=null;
+      draw();
+    }
+  });
+
+  canvas.addEventListener("dblclick", e => {
+    const p=pos(e), i=labelHit(p);
+    if(i>=0){pushHistory();labels.splice(i,1);draw();status.innerHTML="<b>Label removed.</b>";}
+  });
+
+  // Room-label hover descriptions: wait one second before showing.
+  // The same behavior is used in the tray and on placed labels.
+  document.querySelectorAll(".label").forEach(el => {
+    el.removeAttribute("title");
+    el.addEventListener("mouseenter", e => {
+      scheduleLabelTooltip(el.dataset.label, e.clientX, e.clientY);
+    });
+    el.addEventListener("mousemove", e => {
+      if(labelHoverTimer) {
+        clearTimeout(labelHoverTimer);
+        labelHoverTimer=setTimeout(()=>{
+          labelHoverTimer=null;
+          showLabelTooltip(el.dataset.label, e.clientX, e.clientY);
+        },1000);
+      }
+    });
+    el.addEventListener("mouseleave", hideLabelTooltip);
+    el.addEventListener("dragstart", e => {
+      hideLabelTooltip();
+      e.dataTransfer.setData("text/plain",el.dataset.label);
+      e.dataTransfer.effectAllowed="copy";
+    });
+  });
+  canvas.addEventListener("dragover", e => e.preventDefault());
+  canvas.addEventListener("drop", e => {
+    e.preventDefault();
+    const text=e.dataTransfer.getData("text/plain");
+    if(!text)return;
+    const p=pos(e);
+    const c=cellAt(p);
+    if(!c){
+      status.innerHTML="<b>Labels must be placed inside the spreadsheet layout.</b>";
+      return;
+    }
+    pushHistory();
+    labels.push({text,x:p.x,y:p.y});
+    draw();
+    status.innerHTML="<b>Label placed.</b> Use Select if you want to reposition it.";
+  });
+
+  
+  // Keyboard shortcuts: Ctrl+Z = Undo, Ctrl+Y = Redo.
+  document.addEventListener("keydown", e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const key = e.key.toLowerCase();
+    if (key === "z") {
+      e.preventDefault();
+      document.getElementById("undoBtn").click();
+    } else if (key === "y") {
+      e.preventDefault();
+      document.getElementById("redoBtn").click();
+    }
+  });
+
+document.getElementById("undoBtn").addEventListener("click",()=>{
+    if(!history.length){status.innerHTML="<b>Nothing to undo.</b>";return;}
+    redoHistory.push(snapshot());
+    restore(history.pop());
+    status.innerHTML="<b>Undo complete.</b>";
+  });
+  document.getElementById("redoBtn").addEventListener("click",()=>{
+    if(!redoHistory.length){status.innerHTML="<b>Nothing to redo.</b>";return;}
+    history.push(snapshot());
+    if(history.length > 60) history.shift();
+    restore(redoHistory.pop());
+    status.innerHTML="<b>Redo complete.</b>";
+  });
+  document.getElementById("resetBtn").addEventListener("click",()=>{
+    if(!confirm("Reset the whole design?")) return;
+    pushHistory(); walls=[];columns=[];waters=[];grasses=[];statues=[];fountains=[];counters=[];furnaces=[];cabinets=[];amphorae=[];lararia=[];couches=[];tables=[];beds=[];chairs=[];doors=[];marbles=[];selectedMarbleType="plain";document.querySelectorAll(".marble-choice").forEach(b=>b.classList.toggle("active",b.dataset.marble==="plain"));draw();
+    status.innerHTML="<b>Plan reset.</b> Start a new design.";
+  });
+  document.getElementById("saveBtn").addEventListener("click",()=>{
+    const data=JSON.stringify({version:18,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels},null,2);
+    const blob=new Blob([data],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="roman-atrium-design.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    status.innerHTML="<b>Design saved.</b> Keep the JSON file if you want to reopen it later.";
+  });
+  document.getElementById("jpgBtn").addEventListener("click",()=>{
+    // Ask the student for their name before exporting the visible plan as a JPEG.
+    const studentName = prompt("Enter your name for the JPG filename:");
+    if(studentName === null) return;
+
+    const safeName = studentName.trim().replace(/[^a-z0-9 _-]/gi, "").replace(/\s+/g, " ").trim();
+    if(!safeName){
+      alert("Please enter your name before saving the JPG.");
+      return;
+    }
+
+    // Export exactly what is visible on the plan canvas as a JPEG.
+    const exportCanvas=document.createElement("canvas");
+    exportCanvas.width=W;
+    exportCanvas.height=H;
+    const exportCtx=exportCanvas.getContext("2d");
+    exportCtx.fillStyle="#ffffff";
+    exportCtx.fillRect(0,0,W,H);
+    exportCtx.drawImage(canvas,0,0);
+    exportCanvas.toBlob(blob=>{
+      if(!blob){status.innerHTML="<b>JPG export failed.</b>";return;}
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download=`${safeName}-roman-atrium-design.jpg`;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      status.innerHTML=`<b>JPG saved.</b> Saved as ${safeName}-roman-atrium-design.jpg`;
+    },"image/jpeg",0.95);
+  });
+  document.getElementById("loadBtn").addEventListener("click",()=>document.getElementById("fileInput").click());
+  document.getElementById("fileInput").addEventListener("change",e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{try{pushHistory();restore(r.result);status.innerHTML="<b>Design loaded.</b>";}catch(err){console.error("Design load error:",err);alert("That file could not be loaded. The file may be from an incompatible format. Error: " + (err && err.message ? err.message : err));}};
+    r.readAsText(f);
+    e.target.value="";
+  });
+
+  setTool("wall");
+})();
+</script>
+</body>
+</html>
+
+<script>
+(() => {
+  const c=document.getElementById("plan");
+  if(c) c.addEventListener("pointercancel",()=>{ window.tileDragging=false; window.tileLastCell=null; });
+})();
+</script>
