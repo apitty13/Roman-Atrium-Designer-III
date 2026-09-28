@@ -139,6 +139,9 @@
   .swatch.counter::after{content:"•••";position:absolute;left:4px;top:3px;font-size:9px;line-height:12px;letter-spacing:3px;color:#b8875d}
   .swatch.furnace::before{content:"";position:absolute;left:7px;bottom:2px;width:7px;height:5px;background:#e3a12e;border-radius:50% 50% 40% 40%}
   .swatch.cabinet{width:22px;height:19px;margin-left:1px;background:#8a633f;border:2px solid #4d3828;border-radius:2px;box-shadow:inset 3px 3px 0 rgba(255,255,255,.12), inset -3px -3px 0 rgba(50,35,25,.12)}
+  .swatch.chest{width:28px;height:20px;margin-left:0;position:relative;display:inline-block;flex:0 0 28px;background:#75482d;border:2px solid #3e2a20;border-radius:2px 2px 4px 4px;box-sizing:border-box;box-shadow:inset 0 -3px 0 rgba(45,28,18,.22), inset 2px 0 0 rgba(255,255,255,.08)}
+  .swatch.chest::before{content:"";position:absolute;left:1px;right:1px;top:-5px;height:9px;background:#9a643b;border:2px solid #3e2a20;border-bottom:1px solid #4d3222;border-radius:9px 9px 2px 2px;box-shadow:inset 0 2px 0 rgba(255,255,255,.13)}
+  .swatch.chest::after{content:"";position:absolute;left:11px;top:7px;width:4px;height:6px;background:#c39a50;border:1px solid #5b432c;border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
   .swatch.cabinet::before{content:"";position:absolute;left:4px;right:4px;top:5px;height:7px;border:1px solid #d1b58d;background:#b99368;border-radius:1px;box-shadow:0 0 0 1px rgba(77,56,40,.35)}
   .swatch.cabinet::after{content:"";position:absolute;left:10px;top:7px;width:3px;height:3px;background:#5a3e2b;border-radius:50%}
   .swatch.amphora{width:17px;height:21px;margin-left:3px;background:#b8784f;border:2px solid #5b4030;border-radius:45% 45% 35% 35% / 35% 35% 45% 45%;position:relative}
@@ -653,6 +656,7 @@
          <button data-tool="counter">🍶 Thermopolium counter</button>
          <button data-tool="furnace">🔥 Furnace</button>
         <button data-tool="cabinet">📜 Scroll cabinet</button>
+        <button data-tool="chest"><span class="swatch chest"></span> Chest</button>
         <button data-tool="amphora">🏺 Amphora</button>
         <button data-tool="lararium">🏛️ Lararium</button>
         <button data-tool="couch">🛋️ Triclinium couch</button>
@@ -769,6 +773,7 @@
   let counters = [];
   let furnaces = [];
   let cabinets = [];
+  let chests = [];
   let amphorae = [];
   let lararia = [];
   let couches = [];
@@ -851,11 +856,11 @@
     door: "Click a grid line to add a doorway one square long. Doors snap to the nearest horizontal or vertical line.",
     marble: "Choose a marble style, then click or drag across squares to apply it. Dragging paints continuously.",
     select: "Drag a placed label to move it. Double-click a label to remove it.",
-    erase: "Click or drag across wall sections, columns, water, grass, marble, statues, fountains, counters, furnaces, cabinets, amphorae, lararia, couches, tables, beds, doors, or labels to remove them."
+    erase: "Click or drag across wall sections, columns, water, grass, marble, statues, fountains, counters, furnaces, cabinets, chests, amphorae, lararia, couches, tables, beds, doors, or labels to remove them."
   };
 
   function snapshot() {
-    return JSON.stringify({version:19,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType});
+    return JSON.stringify({version:20,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,chests,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType});
   }
   function pushHistory() {
     history.push(snapshot());
@@ -907,6 +912,7 @@
     counters = shiftCells(d.counters);
     furnaces = shiftCells(d.furnaces);
     cabinets = shiftCells(d.cabinets);
+    chests = shiftCells(d.chests).map(c=>({...c,dir:c.dir||0,topRight:false}));
     amphorae = shiftCells(d.amphorae);
     lararia = shiftCells(d.lararia);
     couches = shiftCells(d.couches);
@@ -915,6 +921,7 @@
     chairs = shiftCells(d.chairs).map(c=>({...c,dir:c.dir||0,topRight:false}));
     counters = shiftCells(d.counters).map(c=>({...c,dir:c.dir||0,topRight:false}));
     cabinets = shiftCells(d.cabinets).map(c=>({...c,dir:c.dir||0,topRight:false}));
+    chests = shiftCells(d.chests).map(c=>({...c,dir:c.dir||0,topRight:false}));
     marbles = shiftCells(d.marbles).map(m=>({...m,type:m.type||"plain",topRight:false}));
     doors = d.doors || [];
     selectedMarbleType = d.selectedMarbleType || "plain";
@@ -925,7 +932,7 @@
     const keepValid = arr => Array.isArray(arr) ? arr.filter(o => !('ix' in o) || isEditableMain(o.ix,o.iy)) : [];
     waters=keepValid(waters); grasses=keepValid(grasses); statues=keepValid(statues);
     fountains=keepValid(fountains); counters=keepValid(counters); furnaces=keepValid(furnaces);
-    cabinets=keepValid(cabinets); amphorae=keepValid(amphorae); lararia=keepValid(lararia);
+    cabinets=keepValid(cabinets); chests=keepValid(chests); amphorae=keepValid(amphorae); lararia=keepValid(lararia);
     couches=couches.filter(o => validTwoCellPlacement(o)); tables=keepValid(tables);
     beds=beds.filter(o => validTwoCellPlacement(o)); chairs=keepValid(chairs); marbles=keepValid(marbles);
     draw();
@@ -1433,6 +1440,47 @@
       ctx.restore();
     }
 
+    // Roman wooden chests / storage trunks. The entire drawing is kept inside
+    // the square and rotated around its center so no part sticks outside.
+    for(const q of chests){
+      const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate((q.dir||0)*Math.PI/2);
+      const w=Math.min(c.w-16,54), h=Math.min(c.h-22,40);
+      const x=-w/2, y=-h/2;
+      // shadow/base
+      ctx.fillStyle="rgba(55,40,30,.18)";
+      ctx.fillRect(x+3,y+4,w,h);
+      // body
+      ctx.fillStyle="#8b5a36";
+      ctx.strokeStyle="#4d3525";
+      ctx.lineWidth=2.5;
+      ctx.fillRect(x,y+5,w,h-5);
+      ctx.strokeRect(x,y+5,w,h-5);
+      // lid
+      ctx.fillStyle="#a97545";
+      ctx.fillRect(x-1,y,w+2,8);
+      ctx.strokeRect(x-1,y,w+2,8);
+      // lid boards
+      ctx.strokeStyle="rgba(70,45,30,.55)"; ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo(x+8,y+2); ctx.lineTo(x+8,y+6);
+      ctx.moveTo(x+w-8,y+2); ctx.lineTo(x+w-8,y+6);
+      ctx.stroke();
+      // iron bands and central latch
+      ctx.strokeStyle="#3f3a34"; ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(x+10,y+6); ctx.lineTo(x+10,y+h-1);
+      ctx.moveTo(x+w-10,y+6); ctx.lineTo(x+w-10,y+h-1);
+      ctx.stroke();
+      ctx.fillStyle="#c39a50";
+      ctx.fillRect(-4,y+h/2-3,8,6);
+      ctx.strokeStyle="#6a4d2e"; ctx.lineWidth=1;
+      ctx.strokeRect(-4,y+h/2-3,8,6);
+      ctx.restore();
+    }
+
     // Roman amphorae: freestanding terracotta storage jars with narrow necks and handles.
     for(const q of amphorae){
       const c=cellRect(q), cx=c.x+c.w/2, cy=c.y+c.h/2;
@@ -1796,6 +1844,12 @@
     return chairs.findIndex(ch=>sameCell(ch,c));
   }
 
+  function chestHit(p){
+    const c=cellAt(p);
+    if(!c) return -1;
+    return chests.findIndex(ch=>sameCell(ch,c));
+  }
+
   function tableHit(p){
     const c=cellAt(p);
     if(!c) return -1;
@@ -1819,6 +1873,7 @@
       counters = counters.filter(x=>!sameCell(x,q));
       furnaces = furnaces.filter(x=>!sameCell(x,q));
       cabinets = cabinets.filter(x=>!sameCell(x,q));
+      chests = chests.filter(x=>!sameCell(x,q));
       amphorae = amphorae.filter(x=>!sameCell(x,q));
     }
   }
@@ -1942,6 +1997,8 @@
     if(i>=0){furnaces.splice(i,1);return `furnace:${i}`;}
     i=cabinets.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
     if(i>=0){cabinets.splice(i,1);return `cabinet:${i}`;}
+    i=chests.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
+    if(i>=0){chests.splice(i,1);return `chest:${i}`;}
     i=amphorae.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
     if(i>=0){amphorae.splice(i,1);return `amphora:${i}`;}
     i=lararia.findIndex(f=>{const c=cellRect(f);return p.x>c.x&&p.x<c.x+c.w&&p.y>c.y&&p.y<c.y+c.h;});
@@ -2132,6 +2189,28 @@ canvas.addEventListener("pointerdown", e => {
           chairs=chairs.filter(q=>!sameCell(q,c));
           tables=tables.filter(q=>!sameCell(q,c));
           status.innerHTML="<b>Scroll storage cabinet added.</b> It can represent storage for Roman scrolls.";
+        }
+        draw();
+      }
+    } else if(tool==="chest"){
+      const c=cellAt(p);
+      if(c){
+        pushHistory();
+        const i=chestHit(p);
+        if(i>=0){
+          chests[i].dir=((chests[i].dir||0)+1)%4;
+          status.innerHTML="<b>Chest rotated.</b> Click it again to rotate 90° more.";
+        } else {
+          chests.push({ix:c.ix,iy:c.iy,dir:0,topRight:false});
+          statues=statues.filter(q=>!sameCell(q,c));
+          fountains=fountains.filter(q=>!sameCell(q,c));
+          counters=counters.filter(q=>!sameCell(q,c));
+          furnaces=furnaces.filter(q=>!sameCell(q,c));
+          cabinets=cabinets.filter(q=>!sameCell(q,c));
+          amphorae=amphorae.filter(q=>!sameCell(q,c));
+          chairs=chairs.filter(q=>!sameCell(q,c));
+          tables=tables.filter(q=>!sameCell(q,c));
+          status.innerHTML="<b>Roman chest added.</b> Click it again to rotate it.";
         }
         draw();
       }
@@ -2590,11 +2669,11 @@ document.getElementById("undoBtn").addEventListener("click",()=>{
   });
   document.getElementById("resetBtn").addEventListener("click",()=>{
     if(!confirm("Reset the whole design?")) return;
-    pushHistory(); walls=[];columns=[];waters=[];grasses=[];statues=[];fountains=[];counters=[];furnaces=[];cabinets=[];amphorae=[];lararia=[];couches=[];tables=[];beds=[];chairs=[];doors=[];marbles=[];selectedMarbleType="plain";document.querySelectorAll(".marble-choice").forEach(b=>b.classList.toggle("active",b.dataset.marble==="plain"));draw();
+    pushHistory(); walls=[];columns=[];waters=[];grasses=[];statues=[];fountains=[];counters=[];furnaces=[];cabinets=[];chests=[];amphorae=[];lararia=[];couches=[];tables=[];beds=[];chairs=[];doors=[];marbles=[];selectedMarbleType="plain";document.querySelectorAll(".marble-choice").forEach(b=>b.classList.toggle("active",b.dataset.marble==="plain"));draw();
     status.innerHTML="<b>Plan reset.</b> Start a new design.";
   });
   document.getElementById("saveBtn").addEventListener("click",()=>{
-    const data=JSON.stringify({version:19,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType},null,2);
+    const data=JSON.stringify({version:20,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,chests,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType},null,2);
     const blob=new Blob([data],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
