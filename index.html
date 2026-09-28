@@ -626,8 +626,7 @@
       <label class="label-check"><input type="checkbox"><span>peristylum</span></label>
       <label class="label-check"><input type="checkbox"><span>trīclīnium</span></label>
       <label class="label-check"><input type="checkbox"><span>ātrium</span></label>
-      <label class="label-check"><input type="checkbox"><span>hortus</span></label>
-      <label class="label-check"><input type="checkbox"><span>impluvium</span></label>
+            <label class="label-check"><input type="checkbox"><span>impluvium</span></label>
       <label class="label-check"><input type="checkbox"><span>tablīnum</span></label>
       <label class="label-check"><input type="checkbox"><span>culīna</span></label>
     </div>
@@ -701,7 +700,6 @@
         <div class="label" draggable="true" data-label="peristylum" title="The peristyle which was a walkway surrounded by columns">peristylum</div>
         <div class="label" draggable="true" data-label="trīclīnium" title="dining room with three couches">trīclīnium</div>
         <div class="label" draggable="true" data-label="ātrium" title="entrance hall where guests were received">ātrium</div>
-        <div class="label" draggable="true" data-label="hortus" title="the garden that was surrounded by the peristyle">hortus</div>
         <div class="label" draggable="true" data-label="impluvium" title="pool of water in the middle of the atrium with a hole in the roof above it to collect rainwater.">impluvium</div>
         <div class="label" draggable="true" data-label="tablīnum" title="The study and where the owner met with guests">tablīnum</div>
         <div class="label" draggable="true" data-label="culīna" title="The kitchen">culīna</div>
@@ -803,7 +801,6 @@
     "taberna": "shops located along the street",
     "peristylum": "The peristyle which was a walkway surrounded by columns",
     "trīclīnium": "dining room with three couches",
-    "hortus": "the garden that was surrounded by the peristyle",
     "impluvium": "pool of water in the middle of the atrium with a hole in the roof above it to collect rainwater.",
     "cubiculum": "bedrooms that were located along the atrium and the peristyle",
     "culīna": "The kitchen"
@@ -858,7 +855,7 @@
   };
 
   function snapshot() {
-    return JSON.stringify({version:18,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels});
+    return JSON.stringify({version:19,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType});
   }
   function pushHistory() {
     history.push(snapshot());
@@ -921,6 +918,7 @@
     marbles = shiftCells(d.marbles).map(m=>({...m,type:m.type||"plain",topRight:false}));
     doors = d.doors || [];
     selectedMarbleType = d.selectedMarbleType || "plain";
+    document.querySelectorAll(".marble-choice").forEach(b => b.classList.toggle("active", b.dataset.marble === selectedMarbleType));
     labels = d.labels || [];
     // Designs saved under the old square-grid version may contain objects in
     // cells that are outside the new spreadsheet footprint. Do not display them.
@@ -2596,7 +2594,7 @@ document.getElementById("undoBtn").addEventListener("click",()=>{
     status.innerHTML="<b>Plan reset.</b> Start a new design.";
   });
   document.getElementById("saveBtn").addEventListener("click",()=>{
-    const data=JSON.stringify({version:18,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels},null,2);
+    const data=JSON.stringify({version:19,walls,columns,waters,grasses,statues,fountains,counters,furnaces,cabinets,amphorae,lararia,couches,tables,beds,chairs,doors,marbles,labels,selectedMarbleType},null,2);
     const blob=new Blob([data],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
